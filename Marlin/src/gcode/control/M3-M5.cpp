@@ -76,13 +76,41 @@
  *  PWM duty cycle goes from 0 (off) to 255 (always on).
  */
 void GcodeSuite::M3_M4(const bool is_M4) {
+  
+  if (cutter.cutter_mode == CUTTER_MODE_STANDARD)
+    planner.synchronize();   // Wait for previous movement commands (G0/G1/G2/G3) to complete before changing power
   #if LASER_SAFETY_TIMEOUT_MS > 0
     reset_stepper_timeout(); // Reset timeout to allow subsequent G-code to power the laser (imm.)
   #endif
 
-  if (cutter.cutter_mode == CUTTER_MODE_STANDARD)
-    planner.synchronize();   // Wait for previous movement commands (G0/G1/G2/G3) to complete before changing power
+  #if ENABLED(BRAILLERAP_ENABLE) // Laser / spindle in BRAILLERAP Mode
+  if (parser.seenval('S')) {
+      const float v = parser.value_float();
+      if (v < 1.0F)
+      {
+        cutter.set_enabled(false);
+        power_delay(false);
+      }
+      else if (v < 1.5F)
+      {
+        cutter.set_enabled(true);
+        power_delay(true);
+        #if BRAILLERAP_AUTODISABL_MAGNET
+        cutter.set_enabled(false);
+        power_delay(false);
+        #endif
+      }
+      else if (v >= 1.5F)
+      {
+        cutter.set_enabled(true);
+        power_delay(true);
+      }
+  }
+  #else // Standard laser/spindle mode
+  
+  
 
+  
   #if ENABLED(LASER_FEATURE)
     if (parser.seen_test('I')) {
       cutter.cutter_mode = is_M4 ? CUTTER_MODE_DYNAMIC : CUTTER_MODE_CONTINUOUS;
@@ -134,6 +162,7 @@ void GcodeSuite::M3_M4(const bool is_M4) {
     );
     TERN_(SPINDLE_CHANGE_DIR, cutter.set_reverse(is_M4));
   }
+  #endif
 }
 
 /**
