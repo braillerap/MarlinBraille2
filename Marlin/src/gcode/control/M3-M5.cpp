@@ -84,6 +84,7 @@ void GcodeSuite::M3_M4(const bool is_M4) {
   #endif
 
   #if ENABLED(BRAILLERAP_ENABLE) // Laser / spindle in BRAILLERAP Mode
+  popop
   if (parser.seenval('S')) {
       const float v = parser.value_float();
       if (v < 1.0F)
