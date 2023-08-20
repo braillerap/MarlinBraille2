@@ -90,21 +90,21 @@ void GcodeSuite::M3_M4(const bool is_M4) {
       if (v < 1.0F)
       {
         cutter.set_enabled(false);
-        power_delay(false);
+        cutter.power_delay(false);
       }
       else if (v < 1.5F)
       {
         cutter.set_enabled(true);
-        power_delay(true);
+        cutter.power_delay(true);
         #if BRAILLERAP_AUTODISABL_MAGNET
         cutter.set_enabled(false);
-        power_delay(false);
+        cutter.power_delay(false);
         #endif
       }
       else if (v >= 1.5F)
       {
         cutter.set_enabled(true);
-        power_delay(true);
+        cutter.power_delay(true);
       }
   }
   #else // Standard laser/spindle mode
