@@ -436,6 +436,7 @@ void set_axis_is_at_home(const AxisEnum axis);
   inline void set_axis_homed(const AxisEnum axis)     { SBI(axes_homed, axis); }
   inline void set_axis_trusted(const AxisEnum axis)   { SBI(axes_trusted, axis); }
   inline void set_all_homed()                         { axes_homed = axes_trusted = main_axes_mask; }
+  static void homeaxis_paperload (const AxisEnum axis);
 #else
   constexpr main_axes_bits_t axes_homed = main_axes_mask, axes_trusted = main_axes_mask; // Zero-endstop machines are always homed and trusted
   inline void homeaxis(const AxisEnum axis)           {}

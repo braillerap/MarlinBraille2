@@ -422,7 +422,13 @@ void GcodeSuite::G28() {
 
     // Home Y (before X)
     if (ENABLED(HOME_Y_BEFORE_X) && (doY || TERN0(CODEPENDENT_XY_HOMING, doX)))
+    {
+      #if PAPER_LOADING_HOME_Y
+      homeaxis_paperload(Y_AXIS);
+      #else
       homeaxis(Y_AXIS);
+      #endif
+    }
 
     // Home X
     if (doX || (doY && ENABLED(CODEPENDENT_XY_HOMING) && DISABLED(HOME_Y_BEFORE_X))) {
@@ -457,7 +463,11 @@ void GcodeSuite::G28() {
 
     // Home Y (after X)
     if (DISABLED(HOME_Y_BEFORE_X) && doY)
+      #if PAPER_LOADING_HOME_Y
+      homeaxis_paperload(Y_AXIS);
+      #else
       homeaxis(Y_AXIS);
+      #endif
 
     #if BOTH(FOAMCUTTER_XYUV, HAS_J_AXIS)
       // Home J (after Y)
