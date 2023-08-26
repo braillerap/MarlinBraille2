@@ -94,9 +94,12 @@ void GcodeSuite::M3_M4(const bool is_M4) {
       }
       else if (v < 1.5F)
       {
+        DEBUG_ECHOLNPGM(">>> magnet on  ");
         cutter.set_enabled(true);
         cutter.power_delay(true);
+
         #if BRAILLERAP_AUTODISABL_MAGNET
+        DEBUG_ECHOLNPGM(">>> magnet off  ");
         cutter.set_enabled(false);
         cutter.power_delay(false);
         #endif
