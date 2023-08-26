@@ -2291,7 +2291,7 @@ void homeaxis_paperload (const AxisEnum axis)
   // update endstop
   do_homing_move(axis, -home_dir(axis), get_homing_bump_feedrate(axis));
   
-  int ends = Endstops::current_endstop_bits;
+  int ends = Endstops::Endstops::state();
   
   #if ENABLED(DEBUG_LEVELING_FEATURE)
     if (DEBUGGING(LEVELING)) {
