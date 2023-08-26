@@ -2277,6 +2277,57 @@ void prepare_line_to_destination() {
 
   } // homeaxis()
 
+#if PAPER_LOADING_HOME_Y
+perlinpinpin
+static void homeaxis_paperload (const AxisEnum axis)
+{
+  if (axis != Y_AXIS)
+    return;
+  #if ENABLED(DEBUG_LEVELING_FEATURE)
+    if (DEBUGGING(LEVELING)) {
+      SERIAL_ECHOPAIR(">>> homeaxis_paperload(", axis_codes[axis]);
+      SERIAL_CHAR(')');
+      SERIAL_EOL();
+    }
+  #endif
+  // update endstop
+  do_homing_move(axis, -home_dir(axis), get_homing_bump_feedrate(axis));
+  
+  int ends = Endstops::current_endstop_bits;
+  
+  #if ENABLED(DEBUG_LEVELING_FEATURE)
+    if (DEBUGGING(LEVELING)) {
+      SERIAL_ECHOPAIR(">>> endstop status (", ends );
+      SERIAL_CHAR(')');
+	  SERIAL_ECHOLN (ends);
+	  SERIAL_ECHOLN ("plop");
+      SERIAL_EOL();
+    }
+  #endif
+  
+  
+  const int axis_home_dir =  home_dir(axis);
+
+  while (Endstops::state() & _BV (Y_MIN))
+  {
+    #if ENABLED(DEBUG_LEVELING_FEATURE)
+      if (DEBUGGING(LEVELING)) {
+          SERIAL_ECHOPAIR(">>> bumping move  (", -home_bump_mm(axis) );
+          SERIAL_CHAR(')');
+          SERIAL_EOL();
+      }
+    #endif
+    endstops.enable(false);
+    do_homing_move(axis, -home_bump_mm(axis), get_homing_bump_feedrate(axis));
+    endstops.enable(true);
+    do_homing_move(axis, -axis_home_dir, get_homing_bump_feedrate(axis));
+  }
+
+  homeaxis(axis);
+    if (DEBUGGING(LEVELING)) DEBUG_ECHOLNPGM("<<< homeaxis_paperload(", AS_CHAR(AXIS_CHAR(axis)), ")");
+} // homeaxis_paperload
+#endif
+
 #endif // HAS_ENDSTOPS
 
 /**
@@ -2373,52 +2424,3 @@ void set_axis_is_at_home(const AxisEnum axis) {
   }
 #endif
 
-#if PAPER_LOADING_HOME_Y
-static void homeaxis_paperload (const AxisEnum axis)
-{
-  if (axis != Y_AXIS)
-    return;
-  #if ENABLED(DEBUG_LEVELING_FEATURE)
-    if (DEBUGGING(LEVELING)) {
-      SERIAL_ECHOPAIR(">>> homeaxis_paperload(", axis_codes[axis]);
-      SERIAL_CHAR(')');
-      SERIAL_EOL();
-    }
-  #endif
-  // update endstop
-  do_homing_move(axis, -home_dir(axis), get_homing_bump_feedrate(axis));
-  
-  int ends = Endstops::current_endstop_bits;
-  
-  #if ENABLED(DEBUG_LEVELING_FEATURE)
-    if (DEBUGGING(LEVELING)) {
-      SERIAL_ECHOPAIR(">>> endstop status (", ends );
-      SERIAL_CHAR(')');
-	  SERIAL_ECHOLN (ends);
-	  SERIAL_ECHOLN ("plop");
-      SERIAL_EOL();
-    }
-  #endif
-  
-  
-  const int axis_home_dir =  home_dir(axis);
-
-  while (Endstops::state() & _BV (Y_MIN))
-  {
-    #if ENABLED(DEBUG_LEVELING_FEATURE)
-      if (DEBUGGING(LEVELING)) {
-          SERIAL_ECHOPAIR(">>> bumping move  (", -home_bump_mm(axis) );
-          SERIAL_CHAR(')');
-          SERIAL_EOL();
-      }
-    #endif
-    endstops.enable(false);
-    do_homing_move(axis, -home_bump_mm(axis), get_homing_bump_feedrate(axis));
-    endstops.enable(true);
-    do_homing_move(axis, -axis_home_dir, get_homing_bump_feedrate(axis));
-  }
-
-  homeaxis(axis);
-    if (DEBUGGING(LEVELING)) DEBUG_ECHOLNPGM("<<< homeaxis_paperload(", AS_CHAR(AXIS_CHAR(axis)), ")");
-}
-#endif
