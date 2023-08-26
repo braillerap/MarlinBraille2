@@ -2284,7 +2284,7 @@ void homeaxis_paperload (const AxisEnum axis)
     return;
   #if ENABLED(DEBUG_LEVELING_FEATURE)
     if (DEBUGGING(LEVELING)) {
-      DEBUG_ECHOLNPGM,(">>> homeaxis_paperload(", axis_codes[axis],")");
+      DEBUG_ECHOLNPGM(">>> homeaxis_paperload(", axis_codes[axis],")");
       DEBUG_EOL();
     }
   #endif
@@ -2308,7 +2308,7 @@ void homeaxis_paperload (const AxisEnum axis)
   {
     #if ENABLED(DEBUG_LEVELING_FEATURE)
       if (DEBUGGING(LEVELING)) {
-          DEBUG_ECHOLNPGM(">>> bumping move  (", -home_bump_mm(axis), ")");
+          DEBUG_ECHOLN(">>> bumping move  (", -home_bump_mm(axis), ")");
           DEBUG_EOL();
       }
     #endif
