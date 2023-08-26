@@ -2324,14 +2324,14 @@ void homeaxis_paperload (const AxisEnum axis)
           DEBUG_EOL();
       }
     #endif
-    endstops.enable(false);
-    do_homing_move(axis, home_bump_mm(axis), get_homing_bump_feedrate(axis));
+    //endstops.enable(false);
+    //do_homing_move(axis, home_bump_mm(axis), get_homing_bump_feedrate(axis));
     endstops.enable(true);
     do_homing_move(axis, -5, get_homing_bump_feedrate(axis));
   }
-
+  if (DEBUGGING(LEVELING)) DEBUG_ECHOLNPGM("<<< homeaxis_paperload(", AS_CHAR(AXIS_CHAR(axis)), ")");
   homeaxis(axis);
-    if (DEBUGGING(LEVELING)) DEBUG_ECHOLNPGM("<<< homeaxis_paperload(", AS_CHAR(AXIS_CHAR(axis)), ")");
+    
 } // homeaxis_paperload
 #endif
 
