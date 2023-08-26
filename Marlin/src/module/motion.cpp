@@ -2282,6 +2282,9 @@ void homeaxis_paperload (const AxisEnum axis)
 {
   if (axis != Y_AXIS)
     return;
+  set_axis_is_at_home(axis);
+  sync_plan_position();
+
   #if ENABLED(DEBUG_LEVELING_FEATURE)
     if (DEBUGGING(LEVELING)) {
       DEBUG_ECHOLNPGM(">>> homeaxis_paperload(", axis_codes[axis],")");
@@ -2295,7 +2298,7 @@ void homeaxis_paperload (const AxisEnum axis)
   
   #if ENABLED(DEBUG_LEVELING_FEATURE)
     if (DEBUGGING(LEVELING)) {
-      DEBUG_ECHOLNPGM(">>> endstop status (", ends, ")" );
+      DEBUG_ECHOLNPGM(">>>> endstop status (", ends, ")" );
       DEBUG_ECHOLN (ends);
       DEBUG_EOL();
     }
