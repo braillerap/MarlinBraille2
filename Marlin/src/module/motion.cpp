@@ -2307,7 +2307,7 @@ void homeaxis_paperload (const AxisEnum axis)
   ends = READ_ENDSTOP(Y_MIN_PIN);
   #if ENABLED(DEBUG_LEVELING_FEATURE)
     if (DEBUGGING(LEVELING)) {
-      DEBUG_ECHOLNPGM(">>>> endstop status (", ends, ")" );
+      DEBUG_ECHOLNPGM(">>>> endstop status2 (", ends, ")" );
       DEBUG_ECHOLN (ends);
       DEBUG_EOL();
     }
