@@ -2307,7 +2307,7 @@ void homeaxis_paperload (const AxisEnum axis)
   
   const int axis_home_dir =  home_dir(axis);
 
-  while (Endstops::state() & _BV (Y_MIN))
+  while (Endstops::state() & _BV (Y_MIN) == 0)
   {
     #if ENABLED(DEBUG_LEVELING_FEATURE)
       if (DEBUGGING(LEVELING)) {
