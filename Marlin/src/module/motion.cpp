@@ -2284,9 +2284,9 @@ void homeaxis_paperload (const AxisEnum axis)
     return;
   #if ENABLED(DEBUG_LEVELING_FEATURE)
     if (DEBUGGING(LEVELING)) {
-      SERIAL_ECHOPAIR(">>> homeaxis_paperload(", axis_codes[axis]);
-      SERIAL_CHAR(')');
-      SERIAL_EOL();
+      DEBUG_ECHOPAIR_F(">>> homeaxis_paperload(", axis_codes[axis]);
+      DEBUG_CHAR(')');
+      DEBUG_EOL();
     }
   #endif
   // update endstop
@@ -2296,11 +2296,10 @@ void homeaxis_paperload (const AxisEnum axis)
   
   #if ENABLED(DEBUG_LEVELING_FEATURE)
     if (DEBUGGING(LEVELING)) {
-      SERIAL_ECHOPAIR(">>> endstop status (", ends );
-      SERIAL_CHAR(')');
-	  SERIAL_ECHOLN (ends);
-	  SERIAL_ECHOLN ("plop");
-      SERIAL_EOL();
+      DEBUG_ECHOPAIR_F(">>> endstop status (", ends );
+      DEBUG_CHAR(')');
+      DEBUG_ECHOLN (ends);
+      DEBUG_EOL();
     }
   #endif
   
@@ -2311,9 +2310,9 @@ void homeaxis_paperload (const AxisEnum axis)
   {
     #if ENABLED(DEBUG_LEVELING_FEATURE)
       if (DEBUGGING(LEVELING)) {
-          SERIAL_ECHOPAIR(">>> bumping move  (", -home_bump_mm(axis) );
-          SERIAL_CHAR(')');
-          SERIAL_EOL();
+          DEBUG_ECHOPAIR_F(">>> bumping move  (", -home_bump_mm(axis) );
+          DEBUG_CHAR(')');
+          DEBUG_EOL();
       }
     #endif
     endstops.enable(false);
