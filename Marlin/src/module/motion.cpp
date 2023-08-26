@@ -2304,7 +2304,7 @@ void homeaxis_paperload (const AxisEnum axis)
     }
   #endif
   
-  ends = READ_ENDSTOP(Y_MIN_PIN);
+  ends = READ(Y_MIN_PIN);
   #if ENABLED(DEBUG_LEVELING_FEATURE)
     if (DEBUGGING(LEVELING)) {
       DEBUG_ECHOLNPGM(">>>> endstop status2 (", ends, ")" );
@@ -2316,7 +2316,7 @@ void homeaxis_paperload (const AxisEnum axis)
   
   const int axis_home_dir =  home_dir(axis);
 
-  while (Endstops::state() & _BV (Y_MIN) != 0)
+  while (READ(Y_MIN_PIN) != Y_MIN_ENDSTOP_INVERTING)
   {
     #if ENABLED(DEBUG_LEVELING_FEATURE)
       if (DEBUGGING(LEVELING)) {
