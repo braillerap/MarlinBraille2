@@ -2304,6 +2304,15 @@ void homeaxis_paperload (const AxisEnum axis)
     }
   #endif
   
+  ends = READ_ENDSTOP(Y_MIN_PIN);
+  #if ENABLED(DEBUG_LEVELING_FEATURE)
+    if (DEBUGGING(LEVELING)) {
+      DEBUG_ECHOLNPGM(">>>> endstop status (", ends, ")" );
+      DEBUG_ECHOLN (ends);
+      DEBUG_EOL();
+    }
+  #endif
+  
   
   const int axis_home_dir =  home_dir(axis);
 
