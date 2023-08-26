@@ -28,6 +28,9 @@
 #include "../../feature/spindle_laser.h"
 #include "../../module/planner.h"
 
+#define DEBUG_OUT ENABLED(DEBUG_LEVELING_FEATURE)
+#include "../core/debug_out.h"
+
 /**
  * Laser:
  *  M3 - Laser ON/Power (Ramped power)
