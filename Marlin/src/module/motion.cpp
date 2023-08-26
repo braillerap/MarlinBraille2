@@ -2278,8 +2278,7 @@ void prepare_line_to_destination() {
   } // homeaxis()
 
 #if PAPER_LOADING_HOME_Y
-perlinpinpin
-static void homeaxis_paperload (const AxisEnum axis)
+void homeaxis_paperload (const AxisEnum axis)
 {
   if (axis != Y_AXIS)
     return;
