@@ -2307,11 +2307,11 @@ void homeaxis_paperload (const AxisEnum axis)
   
   const int axis_home_dir =  home_dir(axis);
 
-  while (Endstops::state() & _BV (Y_MIN) == 0)
+  while (Endstops::state() & _BV (Y_MIN) != 0)
   {
     #if ENABLED(DEBUG_LEVELING_FEATURE)
       if (DEBUGGING(LEVELING)) {
-          DEBUG_ECHOLNPGM(">>> bumping move  (", -home_bump_mm(axis), ")");
+          DEBUG_ECHOLNPGM(">>> small home move  (", Endstops::state() & _BV (Y_MIN), ")");
           DEBUG_EOL();
       }
     #endif
