@@ -100,18 +100,22 @@ void GcodeSuite::M3_M4(const bool is_M4) {
         DEBUG_ECHO(">>> magnet on  ");
         DEBUG_ECHOLNPGM(">>> spindle pin (", SPINDLE_LASER_PWM_PIN, ")");
         cutter.set_enabled(true);
+        cutter.apply_power(255);
         cutter.power_delay(true);
 
         #if BRAILLERAP_AUTODISABL_MAGNET
         DEBUG_ECHO(">>> magnet off  ");
         cutter.set_enabled(false);
+        cutter.apply_power(0);
         cutter.power_delay(false);
         #endif
       }
       else if (v >= 1.5F)
       {
         cutter.set_enabled(true);
+        cutter.apply_power(255);
         cutter.power_delay(true);
+        
       }
   }
   #else // Standard laser/spindle mode
