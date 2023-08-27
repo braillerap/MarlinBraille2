@@ -2327,7 +2327,7 @@ void homeaxis_paperload (const AxisEnum axis)
     //endstops.enable(false);
     //do_homing_move(axis, home_bump_mm(axis), get_homing_bump_feedrate(axis));
     endstops.enable(true);
-    do_homing_move(axis, -5, get_homing_bump_feedrate(axis));
+    do_homing_move(axis, -25, get_homing_bump_feedrate(axis));
   }
   if (DEBUGGING(LEVELING)) DEBUG_ECHOLNPGM("<<< homeaxis_paperload(", AS_CHAR(AXIS_CHAR(axis)), ")");
   homeaxis(axis);
