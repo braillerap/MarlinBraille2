@@ -2355,6 +2355,7 @@ void homeaxis_paperload (const AxisEnum axis)
           DEBUG_ECHOLNPGM(">>> synchronize end target (", target[axis], ")");
           DEBUG_EOL();
       }
+      #endif
   }
   //endstops.enable(true);
   if (DEBUGGING(LEVELING)) DEBUG_ECHOLNPGM("<<< homeaxis_paperload(", AS_CHAR(AXIS_CHAR(axis)), ")");
