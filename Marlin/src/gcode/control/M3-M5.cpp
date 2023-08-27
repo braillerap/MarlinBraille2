@@ -98,6 +98,7 @@ void GcodeSuite::M3_M4(const bool is_M4) {
       else if (v < 1.5F)
       {
         DEBUG_ECHO(">>> magnet on  ");
+        DEBUG_ECHOLNPGM(">>> spidle pin (", SPINDLE_LASER_PWM_PIN, ")");
         cutter.set_enabled(true);
         cutter.power_delay(true);
 
