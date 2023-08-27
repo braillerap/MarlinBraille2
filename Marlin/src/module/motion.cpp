@@ -2339,7 +2339,7 @@ void homeaxis_paperload (const AxisEnum axis)
       #endif
 
       // Set delta/cartesian axes directly
-      target[axis] = -50;                  // The move will be towards the endstop
+      target[axis] = 50;                  // The move will be towards the endstop
       planner.buffer_segment(target OPTARG(HAS_DIST_MM_ARG, cart_dist_mm), get_homing_bump_feedrate(axis), false);
   }
   //endstops.enable(true);
