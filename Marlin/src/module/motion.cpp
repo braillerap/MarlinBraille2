@@ -2339,7 +2339,7 @@ void homeaxis_paperload (const AxisEnum axis)
       #endif
 
       // Set delta/cartesian axes directly
-      target[axis] = 10;                  // The move will be towards the endstop
+      target[axis] = 25;                  // The move will be towards the endstop
       planner.buffer_segment(target OPTARG(HAS_DIST_MM_ARG, cart_dist_mm), get_homing_bump_feedrate(axis), false);
       #if ENABLED(DEBUG_LEVELING_FEATURE)
       if (DEBUGGING(LEVELING)) {
@@ -2349,6 +2349,12 @@ void homeaxis_paperload (const AxisEnum axis)
       }
       #endif
       planner.synchronize();
+      #if ENABLED(DEBUG_LEVELING_FEATURE)
+      if (DEBUGGING(LEVELING)) {
+          DEBUG_ECHOLNPGM(">>> synchronize end endstop (", READ(Y_MIN_PIN), ")");
+          DEBUG_ECHOLNPGM(">>> synchronize end target (", target[axis], ")");
+          DEBUG_EOL();
+      }
   }
   //endstops.enable(true);
   if (DEBUGGING(LEVELING)) DEBUG_ECHOLNPGM("<<< homeaxis_paperload(", AS_CHAR(AXIS_CHAR(axis)), ")");
