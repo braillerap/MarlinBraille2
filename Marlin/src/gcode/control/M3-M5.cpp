@@ -103,7 +103,7 @@ void GcodeSuite::M3_M4(const bool is_M4) {
         #endif
         cutter.set_enabled(true);
         cutter.apply_power(255);
-        cutter.power_delay(true);
+        delay(25);
 
         #if BRAILLERAP_AUTODISABL_MAGNET
         #if ENABLED(DEBUG_LEVELING_FEATURE)
@@ -111,7 +111,7 @@ void GcodeSuite::M3_M4(const bool is_M4) {
         #endif
         cutter.set_enabled(false);
         cutter.apply_power(0);
-        cutter.power_delay(false);
+        delay(25);
         #endif
       }
       else if (v >= 1.5F)
