@@ -2320,7 +2320,7 @@ void homeaxis_paperload (const AxisEnum axis)
   {
     #if ENABLED(DEBUG_LEVELING_FEATURE)
       if (DEBUGGING(LEVELING)) {
-          DEBUG_ECHOLNPGM(">>> small home move  (", Endstops::state() & _BV (Y_MIN), ")");
+          DEBUG_ECHOLNPGM(">>> small home move  (", READ(Y_MIN_PIN), ")");
           DEBUG_EOL();
       }
     #endif
