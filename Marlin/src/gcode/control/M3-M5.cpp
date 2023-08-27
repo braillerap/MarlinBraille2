@@ -97,14 +97,18 @@ void GcodeSuite::M3_M4(const bool is_M4) {
       }
       else if (v < 1.5F)
       {
+        #if ENABLED(DEBUG_LEVELING_FEATURE)
         DEBUG_ECHO(">>> magnet on  ");
         DEBUG_ECHOLNPGM(">>> spindle pin (", SPINDLE_LASER_PWM_PIN, ")");
+        #endif
         cutter.set_enabled(true);
         cutter.apply_power(255);
         cutter.power_delay(true);
 
         #if BRAILLERAP_AUTODISABL_MAGNET
+        #if ENABLED(DEBUG_LEVELING_FEATURE)
         DEBUG_ECHO(">>> magnet off  ");
+        #endif
         cutter.set_enabled(false);
         cutter.apply_power(0);
         cutter.power_delay(false);
