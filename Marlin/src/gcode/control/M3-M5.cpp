@@ -111,7 +111,7 @@ void GcodeSuite::M3_M4(const bool is_M4) {
         #endif
         cutter.set_enabled(false);
         cutter.apply_power(0);
-        delay(25);
+        delay(30);
         #endif
       }
       else if (v >= 1.5F)
