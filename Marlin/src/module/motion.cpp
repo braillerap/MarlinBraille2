@@ -2326,10 +2326,23 @@ void homeaxis_paperload (const AxisEnum axis)
     #endif
     //endstops.enable(false);
     //do_homing_move(axis, home_bump_mm(axis), get_homing_bump_feedrate(axis));
-    endstops.enable(false);
-    do_homing_move(axis, -25, get_homing_bump_feedrate(axis));
+    //endstops.enable(false);
+    //do_homing_move(axis, -900, get_homing_bump_feedrate(axis));
+    // Get the ABC or XYZ positions in mm
+      abce_pos_t target = planner.get_axis_positions_mm();
+
+      target[axis] = 0;                         // Set the single homing axis to 0
+      planner.set_machine_position_mm(target);  // Update the machine position
+
+      #if HAS_DIST_MM_ARG
+        const xyze_float_t cart_dist_mm{0};
+      #endif
+
+      // Set delta/cartesian axes directly
+      target[axis] = -50;                  // The move will be towards the endstop
+      planner.buffer_segment(target OPTARG(HAS_DIST_MM_ARG, cart_dist_mm), home_fr_mm_s, active_extruder);
   }
-  endstops.enable(true);
+  //endstops.enable(true);
   if (DEBUGGING(LEVELING)) DEBUG_ECHOLNPGM("<<< homeaxis_paperload(", AS_CHAR(AXIS_CHAR(axis)), ")");
   homeaxis(axis);
     

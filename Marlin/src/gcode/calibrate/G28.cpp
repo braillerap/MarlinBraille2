@@ -424,7 +424,8 @@ void GcodeSuite::G28() {
     if (ENABLED(HOME_Y_BEFORE_X) && (doY || TERN0(CODEPENDENT_XY_HOMING, doX)))
     {
       #if PAPER_LOADING_HOME_Y
-      homeaxis_paperload(Y_AXIS);
+      //homeaxis_paperload(Y_AXIS);
+      homeaxis(Y_AXIS);
       #else
       homeaxis(Y_AXIS);
       #endif
@@ -464,7 +465,8 @@ void GcodeSuite::G28() {
     // Home Y (after X)
     if (DISABLED(HOME_Y_BEFORE_X) && doY)
       #if PAPER_LOADING_HOME_Y
-      homeaxis_paperload(Y_AXIS);
+      //homeaxis_paperload(Y_AXIS);
+      homeaxis(Y_AXIS);
       #else
       homeaxis(Y_AXIS);
       #endif
