@@ -2316,7 +2316,7 @@ void homeaxis_paperload (const AxisEnum axis)
   
   const int axis_home_dir =  home_dir(axis);
 
-  while (READ(Y_MIN_PIN) == Y_MIN_ENDSTOP_INVERTING)
+  while (READ(Y_MIN_PIN) != Y_MIN_ENDSTOP_INVERTING)
   {
     #if ENABLED(DEBUG_LEVELING_FEATURE)
       if (DEBUGGING(LEVELING)) {
