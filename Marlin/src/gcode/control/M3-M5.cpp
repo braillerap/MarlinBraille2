@@ -92,8 +92,12 @@ void GcodeSuite::M3_M4(const bool is_M4) {
       const float v = parser.value_float();
       if (v < 1.0F)
       {
+        bool enabled = cutter.enabled();
         cutter.set_enabled(false);
-        cutter.power_delay(false);
+        cutter.apply_power(0);
+        
+        if (enabled)
+          cutter.power_delay(false);
       }
       else if (v < 1.5F)
       {
@@ -103,7 +107,7 @@ void GcodeSuite::M3_M4(const bool is_M4) {
         #endif
         cutter.set_enabled(true);
         cutter.apply_power(255);
-        delay(25);
+        delay(SPINDLE_LASER_POWERUP_DELAY);
 
         #if BRAILLERAP_AUTODISABL_MAGNET
         #if ENABLED(DEBUG_LEVELING_FEATURE)
@@ -111,7 +115,7 @@ void GcodeSuite::M3_M4(const bool is_M4) {
         #endif
         cutter.set_enabled(false);
         cutter.apply_power(0);
-        delay(30);
+        delay(SPINDLE_LASER_POWERDOWN_DELAY);
         #endif
       }
       else if (v >= 1.5F)
