@@ -120,7 +120,7 @@ void GcodeSuite::M3_M4(const bool is_M4) {
         
         if (enabled)
           //cutter.power_delay(false);
-          delay (SPINDLE_LASER_POWERDOWN_DELAY)
+          delay (SPINDLE_LASER_POWERDOWN_DELAY);
         _total_time_power_off += millis () - _time_power_off;
       }
       else if (v < 1.5F)
