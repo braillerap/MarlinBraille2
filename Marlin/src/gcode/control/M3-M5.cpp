@@ -47,6 +47,7 @@ void brap_report (void)
 {
   SERIAL_ECHOLNPGM("total on:", _total_time_power_on, " ");
   SERIAL_ECHOLNPGM("total off:", _total_time_power_off, " ");
+  SERIAL_ECHOLNPGM("total planner:", _total_time_planner, " ");
   SERIAL_ECHOLNPGM("  ");
 
 }
