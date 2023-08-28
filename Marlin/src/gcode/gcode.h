@@ -1244,9 +1244,11 @@ private:
   static void T(const int8_t tool_index);
 
 };
-#if BRAILLERAP_ENABLE
+
+#if ENABLED(BRAILLERAP_ENABLE)
 uint32_t get_total_power_on (void);
 uint32_t get_total_power_off (void);
 void brap_report (void);
 #endif
+
 extern GcodeSuite gcode;
