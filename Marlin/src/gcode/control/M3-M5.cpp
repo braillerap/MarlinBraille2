@@ -33,7 +33,7 @@
 
   
 #if ENABLED(BRAILLERAP_ENABLE)
-plop
+
 static uint32_t _time_power_on = 0;
 static uint32_t _time_power_off = 0;
 static uint32_t _total_time_power_on = 0;
