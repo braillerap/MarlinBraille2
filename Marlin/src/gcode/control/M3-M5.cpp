@@ -119,7 +119,8 @@ void GcodeSuite::M3_M4(const bool is_M4) {
         cutter.apply_power(SPINDLE_LASER_PWM_POWEROFF);
         
         if (enabled)
-          cutter.power_delay(false);
+          //cutter.power_delay(false);
+          delay (SPINDLE_LASER_POWERDOWN_DELAY)
         _total_time_power_off += millis () - _time_power_off;
       }
       else if (v < 1.5F)
@@ -131,7 +132,8 @@ void GcodeSuite::M3_M4(const bool is_M4) {
         _time_power_on = millis ();
         cutter.set_enabled(true);
         cutter.apply_power(SPINDLE_LASER_PWM_POWERON);
-        cutter.power_delay(true);
+        //cutter.power_delay(true);
+        delay (SPINDLE_LASER_POWERUP_DELAY)
         _total_time_power_on += millis ()  - _time_power_on;
         _time_power_off = millis ();
         #if BRAILLERAP_AUTODISABL_MAGNET
@@ -140,7 +142,8 @@ void GcodeSuite::M3_M4(const bool is_M4) {
           #endif
           cutter.set_enabled(false);
           cutter.apply_power(SPINDLE_LASER_PWM_POWEROFF);
-          cutter.power_delay(false);
+          //cutter.power_delay(false);
+          delay (SPINDLE_LASER_POWERDOWN_DELAY);
         #endif
         _total_time_power_off += millis () - _time_power_off;
       }
@@ -148,7 +151,8 @@ void GcodeSuite::M3_M4(const bool is_M4) {
       {
         cutter.set_enabled(true);
         cutter.apply_power(SPINDLE_LASER_PWM_POWERON);
-        cutter.power_delay(true);
+        //cutter.power_delay(true);
+        delay (SPINDLE_LASER_POWERUP_DELAY);
         
       }
   }
