@@ -133,7 +133,7 @@ void GcodeSuite::M3_M4(const bool is_M4) {
         cutter.set_enabled(true);
         cutter.apply_power(SPINDLE_LASER_PWM_POWERON);
         //cutter.power_delay(true);
-        delay (SPINDLE_LASER_POWERUP_DELAY)
+        delay (SPINDLE_LASER_POWERUP_DELAY);
         _total_time_power_on += millis ()  - _time_power_on;
         _time_power_off = millis ();
         #if BRAILLERAP_AUTODISABL_MAGNET
