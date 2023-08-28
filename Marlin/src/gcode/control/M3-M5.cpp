@@ -36,8 +36,10 @@
 
 static uint32_t _time_power_on = 0;
 static uint32_t _time_power_off = 0;
+static uint32_t _time_planner = 0;
 static uint32_t _total_time_power_on = 0;
 static uint32_t _total_time_power_off = 0;
+static uint32_t _total_time_planner = 0;
 
 uint32_t get_total_power_on (void) { return _total_time_power_on;}
 uint32_t get_total_power_off (void) { return _total_time_power_off;}
@@ -99,7 +101,11 @@ void brap_report (void)
 void GcodeSuite::M3_M4(const bool is_M4) {
   
   if (cutter.cutter_mode == CUTTER_MODE_STANDARD)
+  {
+    _time_planner = millis();
     planner.synchronize();   // Wait for previous movement commands (G0/G1/G2/G3) to complete before changing power
+    _total_time_planner += millis () - _time_planner;
+  }
   #if LASER_SAFETY_TIMEOUT_MS > 0
     reset_stepper_timeout(); // Reset timeout to allow subsequent G-code to power the laser (imm.)
   #endif
