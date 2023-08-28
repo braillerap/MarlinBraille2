@@ -31,6 +31,23 @@
 #define DEBUG_OUT ENABLED(DEBUG_LEVELING_FEATURE)
 #include "../../core/debug_out.h"
 
+  
+#if BRAILLERAP_ENABLE
+static uint32_t _time_power_on = 0;
+static uint32_t _time_power_off = 0;
+static uint32_t _total_time_power_on = 0;
+static uint32_t _total_time_power_off = 0;
+
+uint32_t get_total_power_on (void) { return _total_time_power_on;}
+uint32_t get_total_power_off (void) { return _total_time_power_off;}
+void brap_report (void)
+{
+  SERIAL_ECHOLNPGM("total on:", _total_time_power_on, " ");
+  SERIAL_ECHOLNPGM("total off:", _total_time_power_off, " ");
+  SERIAL_ECHOLNPGM("  ");
+
+}
+#endif
 /**
  * Laser:
  *  M3 - Laser ON/Power (Ramped power)
@@ -50,7 +67,7 @@
  *  M3 - Spindle ON (Clockwise)
  *  M4 - Spindle ON (Counter-clockwise)
  *  M5 - Spindle OFF
- *
+ *  
  * Parameters:
  *  S<power> - Set power. S0 will turn the spindle/laser off.
  *
@@ -92,6 +109,7 @@ void GcodeSuite::M3_M4(const bool is_M4) {
       const float v = parser.value_float();
       if (v < 1.0F)
       {
+        _time_power_off = millis ();
         #if ENABLED(DEBUG_LEVELING_FEATURE)
             DEBUG_ECHO(">>> magnet off  ");
         #endif
@@ -101,6 +119,7 @@ void GcodeSuite::M3_M4(const bool is_M4) {
         
         if (enabled)
           cutter.power_delay(false);
+        _total_time_power_off += millis () - _time_power_off;
       }
       else if (v < 1.5F)
       {
@@ -108,10 +127,12 @@ void GcodeSuite::M3_M4(const bool is_M4) {
           DEBUG_ECHO(">>> magnet on  ");
           DEBUG_ECHOLNPGM(">>> spindle pin (", SPINDLE_LASER_PWM_PIN, ")");
         #endif
+        _time_power_on = millis ();
         cutter.set_enabled(true);
         cutter.apply_power(SPINDLE_LASER_PWM_POWERON);
         cutter.power_delay(true);
-
+        _total_time_power_on += millis ()  - _time_power_on;
+        _time_power_off = millis ();
         #if BRAILLERAP_AUTODISABL_MAGNET
           #if ENABLED(DEBUG_LEVELING_FEATURE)
             DEBUG_ECHO(">>> magnet off  ");
@@ -120,6 +141,7 @@ void GcodeSuite::M3_M4(const bool is_M4) {
           cutter.apply_power(SPINDLE_LASER_PWM_POWEROFF);
           cutter.power_delay(false);
         #endif
+        _total_time_power_off += millis () - _time_power_off;
       }
       else if (v >= 1.5F)
       {
