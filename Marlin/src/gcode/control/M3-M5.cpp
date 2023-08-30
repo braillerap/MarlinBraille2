@@ -114,8 +114,8 @@ void GcodeSuite::M3_M4(const bool is_M4) {
   #if ENABLED(BRAILLERAP_ENABLE) // Laser / spindle in BRAILLERAP Mode
   
   if (parser.seenval('S')) {
-      const float v = parser.value_float();
-      if (v < 1.0F)
+      uint16_t v = parser.value_ushort();
+      if (v == 0)
       {
         _time_power_off = millis ();
         #if ENABLED(DEBUG_LEVELING_FEATURE)
@@ -130,7 +130,7 @@ void GcodeSuite::M3_M4(const bool is_M4) {
           delay (SPINDLE_LASER_POWERDOWN_DELAY);
         _total_time_power_off += millis () - _time_power_off;
       }
-      else if (v < 1.5F)
+      else if (v == 1)
       {
         #if ENABLED(DEBUG_LEVELING_FEATURE)
           DEBUG_ECHO(">>> magnet on  ");
@@ -138,7 +138,7 @@ void GcodeSuite::M3_M4(const bool is_M4) {
         #endif
         _time_power_on = millis ();
         cutter.set_enabled(true);
-        cutter.apply_power(SPINDLE_LASER_PWM_POWERON);
+        cutter.apply_power(SPINDLE_LASER_PWM_POWEROFF);
         //cutter.power_delay(true);
         delay (SPINDLE_LASER_POWERUP_DELAY);
         _total_time_power_on += millis ()  - _time_power_on;
@@ -154,7 +154,7 @@ void GcodeSuite::M3_M4(const bool is_M4) {
         #endif
         _total_time_power_off += millis () - _time_power_off;
       }
-      else if (v >= 1.5F)
+      else if (v > 1)
       {
         cutter.set_enabled(true);
         cutter.apply_power(SPINDLE_LASER_PWM_POWERON);
