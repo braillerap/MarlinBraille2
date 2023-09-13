@@ -2278,6 +2278,7 @@ void prepare_line_to_destination() {
   } // homeaxis()
 
 #if PAPER_LOADING_HOME_Y
+
 void homeaxis_paperload (const AxisEnum axis)
 {
   if (axis != Y_AXIS)
@@ -2315,8 +2316,9 @@ void homeaxis_paperload (const AxisEnum axis)
   
   
   const int axis_home_dir =  home_dir(axis);
-
-  while (READ(Y_MIN_PIN) != Y_MIN_ENDSTOP_INVERTING)
+  uint16_t totalmove = 0;
+  while (READ(Y_MIN_PIN) != Y_MIN_ENDSTOP_INVERTING && 
+    totalmove < PAPER_LOADING_MAX_LOAD_TRAVEL)
   {
     #if ENABLED(DEBUG_LEVELING_FEATURE)
       if (DEBUGGING(LEVELING)) {
@@ -2339,7 +2341,8 @@ void homeaxis_paperload (const AxisEnum axis)
       #endif
 
       // Set delta/cartesian axes directly
-      target[axis] = 25;                  // The move will be towards the endstop
+      target[axis] = PAPER_LOADING_LOAD_TRAVEL;                  // The move will be towards the endstop
+      totalmove += PAPER_LOADING_LOAD_TRAVEL;
       planner.buffer_segment(target OPTARG(HAS_DIST_MM_ARG, cart_dist_mm), get_homing_bump_feedrate(axis), false);
       #if ENABLED(DEBUG_LEVELING_FEATURE)
       if (DEBUGGING(LEVELING)) {
