@@ -11,7 +11,7 @@ you will find the associated BrailleRAP configuration [here] (https://github.com
 
   Platform|MCU|Example Boards
   --------|---|-------
-  [Arduino AVR](https://www.arduino.cc/)|ATMEGA 2560| MKS BASE 1.4, MKS GEN L 2.1 
+  [Arduino AVR](https://www.arduino.cc/)|ATMEGA 2560| MKS Gen 1.4, MKS Gen L 2.1 
 
 ### Work in progress
   Platform|MCU|Example Boards
