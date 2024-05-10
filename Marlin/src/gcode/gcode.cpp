@@ -328,7 +328,7 @@ void GcodeSuite::process_parsed_command(const bool no_ok/*=false*/) {
 
   KEEPALIVE_STATE(IN_HANDLER);
   #if ENABLED(BRAILLERAP_DEBUG_ENABLE)
-    SERIAL_ECHOLNPGM ("proc:", millis()) 
+    SERIAL_ECHOLNPGM ("proc:", millis()); 
   #endif
  /**
   * Block all Gcodes except M511 Unlock Printer, if printer is locked
