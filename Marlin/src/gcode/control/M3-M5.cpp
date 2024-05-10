@@ -113,8 +113,10 @@ void GcodeSuite::M3_M4(const bool is_M4) {
 
   #if ENABLED(BRAILLERAP_ENABLE) // Laser / spindle in BRAILLERAP Mode
   #if ENABLED(BRAILLERAP_DEBUG_ENABLE)
-    SERIAL_ECHOLNPGM ("M3:", millis()); 
+    SERIAL_ECHO("M3:");
+    SERIAL_ECHOLN (millis()); 
   #endif
+
   if (parser.seenval('S')) {
       uint16_t v = parser.value_ushort();
       if (v == 0)
