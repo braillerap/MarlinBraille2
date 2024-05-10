@@ -327,7 +327,9 @@ void GcodeSuite::process_parsed_command(const bool no_ok/*=false*/) {
   TERN_(HAS_FANCHECK, fan_check.check_deferred_error());
 
   KEEPALIVE_STATE(IN_HANDLER);
-
+  #if ENABLED(BRAILLERAP_DEBUG_ENABLE)
+    SERIAL_ECHOLNPGM ("proc:", millis()) 
+  #endif
  /**
   * Block all Gcodes except M511 Unlock Printer, if printer is locked
   * Will still block Gcodes if M511 is disabled, in which case the printer should be unlocked via LCD Menu
