@@ -2343,7 +2343,8 @@ void homeaxis_paperload (const AxisEnum axis)
       // Set delta/cartesian axes directly
       target[axis] = PAPER_LOADING_LOAD_TRAVEL;                  // The move will be towards the endstop
       totalmove += PAPER_LOADING_LOAD_TRAVEL;
-      planner.buffer_segment(target OPTARG(HAS_DIST_MM_ARG, cart_dist_mm), get_homing_bump_feedrate(axis), false);
+      planner.buffer_segment(target OPTARG(HAS_DIST_MM_ARG, cart_dist_mm), 
+        get_homing_bump_feedrate(axis), false);
       #if ENABLED(DEBUG_LEVELING_FEATURE)
       if (DEBUGGING(LEVELING)) {
           DEBUG_ECHOLNPGM(">>> buffer segment end endstop (", READ(Y_MIN_PIN), ")");
