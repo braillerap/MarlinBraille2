@@ -49,7 +49,11 @@
   #define TOUCH_INT_PIN  -1
 #endif
 
-#define XPT2046_DFR_MODE        0x00
+#if PIN_EXISTS(TOUCH_INT)
+  #define XPT2046_DFR_MODE      0x00
+#else
+  #define XPT2046_DFR_MODE      0x01
+#endif
 #define XPT2046_SER_MODE        0x04
 #define XPT2046_CONTROL         0x80
 
@@ -81,5 +85,5 @@ private:
 
 public:
   static void init();
-  static bool getRawPoint(int16_t *x, int16_t *y);
+  static bool getRawPoint(int16_t * const x, int16_t * const y);
 };

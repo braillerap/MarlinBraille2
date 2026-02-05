@@ -27,23 +27,54 @@
   #include "../../feature/e_parser.h"
 #endif
 
+#if ENABLED(SERIAL_DMA)
+  #include "HardwareSerial.h"
+#endif
+
 #include "../../core/serial_hook.h"
 
-typedef void (*usart_rx_callback_t)(serial_t * obj);
+#ifdef USBCON
+  #include <USBSerial.h>
+  typedef ForwardSerial1Class< decltype(SerialUSB) > DefaultSerial1;
+  extern DefaultSerial1 MSerialUSB;
+  #define USB_SERIAL_PORT(...) MSerialUSB
+#endif
 
-struct MarlinSerial : public HardwareSerial {
-  MarlinSerial(void *peripheral, usart_rx_callback_t rx_callback) :
-      HardwareSerial(peripheral), _rx_callback(rx_callback)
-  { }
+#define SERIAL_INDEX_MIN 1
+#define SERIAL_INDEX_MAX 9
+#include "../shared/serial_ports.h"
 
-  void begin(unsigned long baud, uint8_t config);
-  inline void begin(unsigned long baud) { begin(baud, SERIAL_8N1); }
+#if defined(LCD_SERIAL_PORT) && ANY(HAS_DGUS_LCD, EXTENSIBLE_UI)
+  #define LCD_SERIAL_TX_BUFFER_FREE() LCD_SERIAL.availableForWrite()
+#endif
 
-  void _rx_complete_irq(serial_t *obj);
+#if ENABLED(SERIAL_DMA)
 
-protected:
-  usart_rx_callback_t _rx_callback;
-};
+  struct MarlinSerial : public HAL_HardwareSerial {
+    MarlinSerial(void *peripheral) : HAL_HardwareSerial(peripheral) { }
+    void begin(unsigned long baud, uint8_t config);
+    inline void begin(unsigned long baud) { begin(baud, SERIAL_8N1); }
+  };
+
+#else // Arduino non-DMA
+
+  typedef void (*usart_rx_callback_t)(serial_t * obj);
+
+  struct MarlinSerial : public HardwareSerial {
+    MarlinSerial(void *peripheral, usart_rx_callback_t rx_callback)
+      : HardwareSerial(peripheral), _rx_callback(rx_callback) { }
+
+    void begin(unsigned long baud, uint8_t config);
+    inline void begin(unsigned long baud) { begin(baud, SERIAL_8N1); }
+
+    void _rx_complete_irq(serial_t *obj);
+    FORCE_INLINE static uint8_t buffer_overruns() { return 0; } // Not implemented. Void to avoid platform-dependent code.
+
+    protected:
+      usart_rx_callback_t _rx_callback;
+  };
+
+#endif
 
 typedef Serial1Class<MarlinSerial> MSerialT;
 extern MSerialT MSerial1;

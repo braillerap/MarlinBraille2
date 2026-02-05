@@ -22,10 +22,7 @@
 #pragma once
 
 #include "../../inc/MarlinConfigPre.h"
-
-#if ENABLED(TOUCH_SCREEN_CALIBRATION)
-  #include "../tft_io/touch_calibration.h"
-#endif
+#include "../tft_io/touch_calibration.h"
 
 #if ENABLED(TFT_TOUCH_DEVICE_GT911)
   #include HAL_PATH(../.., tft/gt911.h)
@@ -43,26 +40,19 @@ extern int8_t encoderTopLine, encoderLine, screen_items;
 enum TouchControlType : uint16_t {
   NONE = 0x0000,
   CALIBRATE,
-  MENU_SCREEN,
-  MENU_ITEM,
+  MENU_SCREEN, MENU_ITEM,
   BACK,
-  PAGE_UP,
-  PAGE_DOWN,
-  CLICK,
-  MENU_CLICK,
+  PAGE_UP, PAGE_DOWN,
+  CLICK, MENU_CLICK,
   RESUME_CONTINUE,
   SLIDER,
-  INCREASE,
-  DECREASE,
-  CANCEL,
-  CONFIRM,
-  HEATER,
-  FAN,
-  FEEDRATE,
-  FLOWRATE,
+  INCREASE, DECREASE,
+  CANCEL, CONFIRM,
+  HEATER, FAN,
+  FEEDRATE, FLOWRATE,
   UBL,
   STOP,
-  BUTTON,
+  BUTTON
 };
 
 typedef struct __attribute__((__packed__)) {
@@ -81,7 +71,6 @@ typedef struct __attribute__((__packed__)) {
 #define UBL_REPEAT_DELAY    125
 #define FREE_MOVE_RANGE     32
 
-#define TSLP_PREINIT  0
 #define TSLP_SLEEPING 1
 
 class Touch {
@@ -94,16 +83,20 @@ class Touch {
     static touch_control_t *current_control;
     static uint16_t controls_count;
 
-    static millis_t next_touch_ms, time_to_hold, repeat_delay, touch_time;
+    static millis_t next_touch_ms, time_to_hold, repeat_delay, nada_start_ms;
     static TouchControlType touch_control_type;
 
-    static bool get_point(int16_t *x, int16_t *y);
-    static void touch(touch_control_t *control);
-    static void hold(touch_control_t *control, millis_t delay=0);
+    static bool get_point(int16_t * const x, int16_t * const y);
+
+    // Touch first detected in a control
+    static void touch(touch_control_t * const control);
+
+    // Set the control as "held" until the touch is released
+    static void hold(touch_control_t * const control, const millis_t delay=0);
 
   public:
     static void init();
-    static void reset() { controls_count = 0; touch_time = 0; current_control = nullptr; }
+    static void reset() { controls_count = 0; nada_start_ms = 0; current_control = nullptr; }
     static void clear() { controls_count = 0; }
     static void idle();
     static bool is_clicked() {
@@ -115,7 +108,7 @@ class Touch {
     }
     static void disable() { enabled = false; }
     static void enable() { enabled = true; }
-    #if HAS_TOUCH_SLEEP
+    #if HAS_DISPLAY_SLEEP
       static millis_t next_sleep_ms;
       static bool isSleeping() { return next_sleep_ms == TSLP_SLEEPING; }
       static void sleepTimeout();

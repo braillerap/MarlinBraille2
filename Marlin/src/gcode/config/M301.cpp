@@ -28,22 +28,22 @@
 #include "../../module/temperature.h"
 
 /**
- * M301: Set PID parameters P I D (and optionally C, L)
+ * M301: Set Hotend PID
  *
- *   E[extruder] Default: 0
+ * Set PID parameters P I D (and optionally C, L)
  *
- *   P[float] Kp term
- *   I[float] Ki term (unscaled)
- *   D[float] Kd term (unscaled)
+ * Parameters:
+ *   E<extruder>  Default: 0
+ *   P<float>     Kp term
+ *   I<float>     Ki term (unscaled)
+ *   D<float>     Kd term (unscaled)
  *
- * With PID_EXTRUSION_SCALING:
+ *   With PID_EXTRUSION_SCALING:
+ *     C<float> Kc term
+ *     L<int> LPQ length
  *
- *   C[float] Kc term
- *   L[int] LPQ length
- *
- * With PID_FAN_SCALING:
- *
- *   F[float] Kf term
+ *   With PID_FAN_SCALING:
+ *     F<float> Kf term
  */
 void GcodeSuite::M301() {
   // multi-extruder PID patch: M301 updates or prints a single extruder's PID values
@@ -78,6 +78,8 @@ void GcodeSuite::M301() {
 }
 
 void GcodeSuite::M301_report(const bool forReplay/*=true*/ E_OPTARG(const int8_t eindex/*=-1*/)) {
+  TERN_(MARLIN_SMALL_BUILD, return);
+
   report_heading(forReplay, F(STR_HOTEND_PID));
   IF_DISABLED(HAS_MULTI_EXTRUDER, constexpr int8_t eindex = -1);
   HOTEND_LOOP() {

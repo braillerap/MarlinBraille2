@@ -50,10 +50,10 @@
   #if ENABLED(IIC_BL24CXX_EEPROM)
     #define IIC_EEPROM_SDA                  PC2
     #define IIC_EEPROM_SCL                  PC3
-    #define MARLIN_EEPROM_SIZE             0x800  // 2K (24C16)
+    #define MARLIN_EEPROM_SIZE            0x800U  // 2K (24C16)
   #else
     #define SDCARD_EEPROM_EMULATION               // SD EEPROM until all EEPROM is BL24CXX
-    #define MARLIN_EEPROM_SIZE             0x800  // 2K
+    #define MARLIN_EEPROM_SIZE            0x800U  // 2K
   #endif
 
   #undef NO_EEPROM_SELECTED
@@ -67,14 +67,21 @@
 //
 // Limit Switches
 //
-#define X_STOP_PIN                          PD10  // X
-#define X2_STOP_PIN                         PE15  // X2
+#define X_MIN_PIN                           PD10  // X
+#define X_MAX_PIN                           PE15  // X2
 #define Y_STOP_PIN                          PE0   // Y
-#define Z_STOP_PIN                          PE1   // Z
-#define Z2_STOP_PIN                         PE2   // Z2
+#define Z_MIN_PIN                           PE1   // Z
+#define Z_MAX_PIN                           PE2   // Z2
 
 #ifndef Z_MIN_PROBE_PIN
   #define Z_MIN_PROBE_PIN                   PD12  // BLTouch IN
+#endif
+
+//
+// Probe enable
+//
+#if ENABLED(PROBE_ENABLE_DISABLE) && !defined(PROBE_ENABLE_PIN)
+  #define PROBE_ENABLE_PIN            SERVO0_PIN
 #endif
 
 //
@@ -135,7 +142,7 @@
 
 #define FAN0_PIN                            PB14  // FAN
 #define FAN1_PIN                            PB12  // FAN
-#define FAN_SOFT_PWM
+#define FAN_SOFT_PWM_REQUIRED
 
 //
 // SD Card

@@ -40,7 +40,6 @@ unifont_t *TFT_String::font_header;
   uint16_t TFT_String::extra_count;
 #endif
 
-
 uint16_t TFT_String::data[];
 uint16_t TFT_String::span;
 uint8_t TFT_String::length;
@@ -58,7 +57,7 @@ void TFT_String::set_font(const uint8_t *font) {
     for (glyph = 0; glyph < EXTRA_GLYPHS; glyph++) glyphs_extra[glyph] = nullptr;
   #endif
 
-  DEBUG_ECHOLNPGM("Format: ",            ((unifont_t *)font_header)->Format);
+  DEBUG_ECHOLNPGM("format: ",            ((unifont_t *)font_header)->format);
   DEBUG_ECHOLNPGM("capitalAHeight: ",    ((unifont_t *)font_header)->capitalAHeight);
   DEBUG_ECHOLNPGM("fontStartEncoding: ", ((unifont_t *)font_header)->fontStartEncoding);
   DEBUG_ECHOLNPGM("fontEndEncoding: ",   ((unifont_t *)font_header)->fontEndEncoding);
@@ -123,19 +122,19 @@ void TFT_String::add_glyphs(const uint8_t *font) {
 }
 
 glyph_t *TFT_String::glyph(uint16_t character) {
-  if (character == 0x2026) character = 0x0a;  /* character 0x2026 "…" is remaped to 0x0a and should be part of symbols font */
+  if (character == 0x2026) character = 0x0a;  /* character 0x2026 "…" is remapped to 0x0a and should be part of symbols font */
   if (character < 0x00ff) return glyphs[character] ?: glyphs['?'];    /* Use '?' for unknown glyphs */
 
   #if EXTRA_GLYPHS
     if (font_header_extra == nullptr || character < font_header_extra->fontStartEncoding || character > font_header_extra->fontEndEncoding) return glyphs['?'];
 
-    if ((font_header_extra->Format & 0xF0) == FONT_MARLIN_GLYPHS) {
+    if ((font_header_extra->format & 0xF0) == FONT_MARLIN_GLYPHS) {
       if (glyphs_extra[character - font_header_extra->fontStartEncoding])
         return (glyph_t *)glyphs_extra[character - font_header_extra->fontStartEncoding];
     }
     else {
       #if 0
-        // Slow search method that that does not care if glyphs are ordered by unicode
+        // Slow search method that doesn't care if glyphs are Unicode-ordered
         for (uint16_t i = 0; i < extra_count; i++) {
           if (character == ((uniglyph_t *)glyphs_extra[i])->unicode)
             return &(((uniglyph_t *)glyphs_extra[i])->glyph);

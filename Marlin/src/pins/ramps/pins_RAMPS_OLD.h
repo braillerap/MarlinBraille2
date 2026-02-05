@@ -91,7 +91,7 @@
   #ifndef FAN0_PIN
     #define FAN0_PIN                          11
   #endif
-#else                                             // RAMPS_V_1_1 or RAMPS_V_1_2
+#else // RAMPS_V_1_1 or RAMPS_V_1_2
   #define HEATER_0_PIN                        10
   #define HEATER_BED_PIN                       8
   #ifndef FAN0_PIN
@@ -103,7 +103,7 @@
 // Misc. Functions
 //
 #define SDPOWER_PIN                           48
-#define SDSS                                  53
+#define SD_SS_PIN                             53
 #define LED_PIN                               13
 
 #ifndef CASE_LIGHT_PIN

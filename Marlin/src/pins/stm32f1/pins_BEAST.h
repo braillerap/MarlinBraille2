@@ -24,7 +24,7 @@
 #include "env_validate.h"
 
 /**
- * 21017 Victor Perez Marlin for stm32f1 test
+ * 2017 Victor Perez Marlin for stm32f1 test
  */
 
 #define BOARD_INFO_NAME      "Beast STM32"
@@ -77,7 +77,7 @@
 //
 // Misc. Functions
 //
-#define SDSS                                PA15
+#define SD_SS_PIN                           PA15
 #define LED_PIN                             PB2
 
 //

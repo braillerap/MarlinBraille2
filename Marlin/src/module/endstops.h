@@ -31,8 +31,11 @@
 #define _ES_ENUM(A,M) A##_##M
 #define ES_ENUM(A,M) _ES_ENUM(A,M)
 
-#define _ES_ITEM(N) N,
-#define ES_ITEM(K,N) TERN_(K,DEFER4(_ES_ITEM)(N))
+#define _ES_ITEM(N) , N
+#define ES_ITEM(K,N) TERN(K,_ES_ITEM,OMIT)(N)
+
+#define _ESN_ITEM(K,A,M) ES_ITEM(K,ES_ENUM(A,M))
+#define ES_MINMAX(A) ES_ITEM(HAS_##A##_MIN_STATE, ES_ENUM(A,MIN)) ES_ITEM(HAS_##A##_MAX_STATE, ES_ENUM(A,MAX))
 
 /**
  * Basic Endstop Flag Bits:
@@ -52,92 +55,83 @@
  * - Z_MIN_PROBE is an alias to Z_MIN when the Z_MIN_PIN is being used as the probe pin.
  * - When homing with the probe Z_ENDSTOP is a Z_MIN_PROBE alias, otherwise a Z_MIN/MAX alias.
  */
-enum EndstopEnum : char {
+enum EndstopEnum : int8_t {
+  _ES_START_ = -1
+
   // Common XYZ (ABC) endstops.
-  ES_ITEM(USE_X_MIN, X_MIN) ES_ITEM(USE_X_MAX, X_MAX)
-  ES_ITEM(USE_Y_MIN, Y_MIN) ES_ITEM(USE_Y_MAX, Y_MAX)
-  ES_ITEM(USE_Z_MIN, Z_MIN) ES_ITEM(USE_Z_MAX, Z_MAX)
-  ES_ITEM(USE_I_MIN, I_MIN) ES_ITEM(USE_I_MAX, I_MAX)
-  ES_ITEM(USE_J_MIN, J_MIN) ES_ITEM(USE_J_MAX, J_MAX)
-  ES_ITEM(USE_K_MIN, K_MIN) ES_ITEM(USE_K_MAX, K_MAX)
-  ES_ITEM(USE_U_MIN, U_MIN) ES_ITEM(USE_U_MAX, U_MAX)
-  ES_ITEM(USE_V_MIN, V_MIN) ES_ITEM(USE_V_MAX, V_MAX)
-  ES_ITEM(USE_W_MIN, W_MIN) ES_ITEM(USE_W_MAX, W_MAX)
+  ES_MINMAX(X) ES_MINMAX(Y) ES_MINMAX(Z)
+  ES_MINMAX(I) ES_MINMAX(J) ES_MINMAX(K)
+  ES_MINMAX(U) ES_MINMAX(V) ES_MINMAX(W)
 
   // Extra Endstops for XYZ
-  #if ENABLED(X_DUAL_ENDSTOPS)
-    ES_ITEM(USE_X_MIN, X2_MIN) ES_ITEM(USE_X_MAX, X2_MAX)
-  #endif
-  #if ENABLED(Y_DUAL_ENDSTOPS)
-    ES_ITEM(USE_Y_MIN, Y2_MIN) ES_ITEM(USE_Y_MAX, Y2_MAX)
-  #endif
-  #if ENABLED(Z_MULTI_ENDSTOPS)
-    ES_ITEM(USE_Z_MIN, Z2_MIN) ES_ITEM(USE_Z_MAX, Z2_MAX)
-    #if NUM_Z_STEPPERS >= 3
-      ES_ITEM(USE_Z_MIN, Z3_MIN) ES_ITEM(USE_Z_MAX, Z3_MAX)
-      #if NUM_Z_STEPPERS >= 4
-        ES_ITEM(USE_Z_MIN, Z4_MIN) ES_ITEM(USE_Z_MAX, Z4_MAX)
-      #endif
-    #endif
-  #endif
+  ES_MINMAX(X2) ES_MINMAX(Y2) ES_MINMAX(Z2) ES_MINMAX(Z3) ES_MINMAX(Z4)
+
+  // Calibration pin state
+  ES_ITEM(HAS_CALIBRATION_STATE, CALIBRATION)
 
   // Bed Probe state is distinct or shared with Z_MIN (i.e., when the probe is the only Z endstop)
-  #if !HAS_DELTA_SENSORLESS_PROBING
-    ES_ITEM(HAS_BED_PROBE, Z_MIN_PROBE IF_DISABLED(USE_Z_MIN_PROBE, = Z_MIN))
+  #if HAS_Z_PROBE_STATE && USE_Z_MIN_PROBE
+    , Z_MIN_PROBE
   #endif
 
-  // The total number of states
-  NUM_ENDSTOP_STATES
+  // The total number of distinct states
+  , NUM_ENDSTOP_STATES
 
-  // Endstop aliased to MIN or MAX
-  #if HAS_X_ENDSTOP
+  // Endstop aliases
+  #if HAS_Z_PROBE_STATE && !USE_Z_MIN_PROBE
+    , Z_MIN_PROBE = Z_MIN
+  #endif
+
+  #if HAS_X_STATE
     , X_ENDSTOP = TERN(X_HOME_TO_MAX, X_MAX, X_MIN)
-    #if ENABLED(X_DUAL_ENDSTOPS)
-      , X2_ENDSTOP = TERN(X_HOME_TO_MAX, X2_MAX, X2_MIN)
-    #endif
   #endif
-  #if HAS_Y_ENDSTOP
+  #if HAS_X2_STATE
+    , X2_ENDSTOP = TERN(X_HOME_TO_MAX, X2_MAX, X2_MIN)
+  #endif
+  #if HAS_Y_STATE
     , Y_ENDSTOP = TERN(Y_HOME_TO_MAX, Y_MAX, Y_MIN)
-    #if ENABLED(Y_DUAL_ENDSTOPS)
-      , Y2_ENDSTOP = TERN(Y_HOME_TO_MAX, Y2_MAX, Y2_MIN)
-    #endif
+  #endif
+  #if HAS_Y2_STATE
+    , Y2_ENDSTOP = TERN(Y_HOME_TO_MAX, Y2_MAX, Y2_MIN)
   #endif
   #if HOMING_Z_WITH_PROBE
-    , Z_ENDSTOP = Z_MIN_PROBE
-  #elif HAS_Z_ENDSTOP
+    , Z_ENDSTOP = Z_MIN_PROBE // "Z" endstop alias when homing with the probe
+  #elif HAS_Z_STATE
     , Z_ENDSTOP = TERN(Z_HOME_TO_MAX, Z_MAX, Z_MIN)
-    #if ENABLED(Z_MULTI_ENDSTOPS)
-      , Z2_ENDSTOP = TERN(Z_HOME_TO_MAX, Z2_MAX, Z2_MIN)
-      #if NUM_Z_STEPPERS >= 3
-        , Z3_ENDSTOP = TERN(Z_HOME_TO_MAX, Z3_MAX, Z3_MIN)
-        #if NUM_Z_STEPPERS >= 4
-          , Z4_ENDSTOP = TERN(Z_HOME_TO_MAX, Z4_MAX, Z4_MIN)
-        #endif
-      #endif
-    #endif
   #endif
-  #if HAS_I_ENDSTOP
+  #if HAS_Z2_STATE
+    , Z2_ENDSTOP = TERN(Z_HOME_TO_MAX, Z2_MAX, Z2_MIN)
+  #endif
+  #if HAS_Z3_STATE
+    , Z3_ENDSTOP = TERN(Z_HOME_TO_MAX, Z3_MAX, Z3_MIN)
+  #endif
+  #if HAS_Z4_STATE
+    , Z4_ENDSTOP = TERN(Z_HOME_TO_MAX, Z4_MAX, Z4_MIN)
+  #endif
+  #if HAS_I_STATE
     , I_ENDSTOP = TERN(I_HOME_TO_MAX, I_MAX, I_MIN)
   #endif
-  #if HAS_J_ENDSTOP
+  #if HAS_J_STATE
     , J_ENDSTOP = TERN(J_HOME_TO_MAX, J_MAX, J_MIN)
   #endif
-  #if HAS_K_ENDSTOP
+  #if HAS_K_STATE
     , K_ENDSTOP = TERN(K_HOME_TO_MAX, K_MAX, K_MIN)
   #endif
-  #if HAS_U_ENDSTOP
+  #if HAS_U_STATE
     , U_ENDSTOP = TERN(U_HOME_TO_MAX, U_MAX, U_MIN)
   #endif
-  #if HAS_V_ENDSTOP
+  #if HAS_V_STATE
     , V_ENDSTOP = TERN(V_HOME_TO_MAX, V_MAX, V_MIN)
   #endif
-  #if HAS_W_ENDSTOP
+  #if HAS_W_STATE
     , W_ENDSTOP = TERN(W_HOME_TO_MAX, W_MAX, W_MIN)
   #endif
 };
 
 #undef _ES_ITEM
 #undef ES_ITEM
+#undef _ESN_ITEM
+#undef ES_MINMAX
 
 class Endstops {
   public:
@@ -179,10 +173,15 @@ class Endstops {
     static void init();
 
     /**
-     * Are endstops or the probe set to abort the move?
+     * Saved settings initialization
+     */
+    static void factory_reset();
+
+    /**
+     * Are endstops or the Z min probe or the CALIBRATION probe set to abort the move?
      */
     FORCE_INLINE static bool abort_enabled() {
-      return enabled || TERN0(HAS_BED_PROBE, z_probe_enabled);
+      return enabled || TERN0(HAS_BED_PROBE, z_probe_enabled) || TERN0(CALIBRATION_GCODE, calibration_probe_enabled);
     }
 
     static bool global_enabled() { return enabled_globally; }
@@ -222,6 +221,11 @@ class Endstops {
       ;
     }
 
+    /**
+     * Get a particular endstop state
+     */
+    FORCE_INLINE static bool state(const EndstopEnum es) { return TEST(state(), es); }
+
     static bool probe_switch_activated() {
       return (true
         #if ENABLED(PROBE_ACTIVATION_SWITCH)
@@ -247,7 +251,7 @@ class Endstops {
     static void enable(const bool onoff=true);
 
     // Disable / Enable endstops based on ENSTOPS_ONLY_FOR_HOMING and global enable
-    static void not_homing();
+    static void not_homing() { enabled = enabled_globally; }
 
     #if ENABLED(VALIDATE_HOMING_ENDSTOPS)
       // If the last move failed to trigger an endstop, call kill
@@ -263,6 +267,13 @@ class Endstops {
     #if HAS_BED_PROBE
       static volatile bool z_probe_enabled;
       static void enable_z_probe(const bool onoff=true);
+    #endif
+
+    // Enable / disable calibration probe checking
+    #if ENABLED(CALIBRATION_GCODE)
+      static volatile bool calibration_probe_enabled;
+      static volatile bool calibration_stop_state;
+      static void enable_calibration_probe(const bool onoff, const bool stop_state=true);
     #endif
 
     static void resync();
@@ -285,11 +296,6 @@ class Endstops {
       static void clear_endstop_state();
       static bool tmc_spi_homing_check();
     #endif
-  public:
-    // Basic functions for Sensorless Homing
-    #if USE_SENSORLESS
-      static void set_homing_current(const bool onoff);
-    #endif
 };
 
 extern Endstops endstops;
@@ -307,3 +313,11 @@ class TemporaryGlobalEndstopsState {
     }
     ~TemporaryGlobalEndstopsState() { endstops.enable_globally(saved); }
 };
+
+#if ENABLED(G38_PROBE_TARGET)
+  typedef struct ProbeTarget {
+    uint8_t type;     // Flag to tell the ISR the type of G38 in progress; 0 for NONE.
+    bool triggered;   // Flag from the ISR to indicate the endstop changed
+  } probe_target_t;
+  extern probe_target_t G38_move;
+#endif

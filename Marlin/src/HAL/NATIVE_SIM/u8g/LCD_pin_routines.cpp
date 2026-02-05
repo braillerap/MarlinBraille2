@@ -27,7 +27,7 @@
  *
  * Couldn't just call exact copies because the overhead killed the LCD update speed
  * With an intermediate level the softspi was running in the 10-20kHz range which
- * resulted in using about about 25% of the CPU's time.
+ * resulted in using about 25% of the CPU's time.
  */
 
 #ifdef __PLAT_NATIVE_SIM__
@@ -43,7 +43,6 @@ void u8g_SetPinOutput(uint8_t internal_pin_number) { SET_DIR_OUTPUT(internal_pin
 void u8g_SetPinInput(uint8_t internal_pin_number) { SET_DIR_INPUT(internal_pin_number); }
 void u8g_SetPinLevel(uint8_t pin, uint8_t pin_status) { WRITE_PIN(pin, pin_status); }
 uint8_t u8g_GetPinLevel(uint8_t pin) { return READ_PIN(pin); }
-void usleep(uint64_t microsec) { assert(false); /* why we here? */ }
 
 #ifdef __cplusplus
   }

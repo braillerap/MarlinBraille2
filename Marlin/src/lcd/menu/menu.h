@@ -39,7 +39,7 @@ typedef void (*selectFunc_t)();
 #define SS_INVERT  0x04
 #define SS_DEFAULT SS_CENTER
 
-#if ENABLED(BABYSTEP_ZPROBE_OFFSET) && Z_PROBE_OFFSET_RANGE_MIN >= -9 && Z_PROBE_OFFSET_RANGE_MAX <= 9
+#if ENABLED(BABYSTEP_ZPROBE_OFFSET) && PROBE_OFFSET_ZMIN >= -9 && PROBE_OFFSET_ZMAX <= 9
   #define BABYSTEP_TO_STR(N) ftostr43sign(N)
 #elif ENABLED(BABYSTEPPING)
   #define BABYSTEP_TO_STR(N) ftostr53sign(N)
@@ -59,31 +59,31 @@ class MenuItemBase {
     static const char* itemStringC;
 
     // Store an index and string for later substitution
-    FORCE_INLINE static void init(const int8_t ind=0, FSTR_P const fstr=nullptr) { itemIndex = ind; itemStringF = fstr; itemStringC = nullptr; }
-    FORCE_INLINE static void init(const int8_t ind, const char * const cstr) { itemIndex = ind; itemStringC = cstr; itemStringF = nullptr; }
+    FORCE_INLINE static void init(const int8_t ind=-1, FSTR_P const fstr=nullptr) { itemStringF = fstr; itemStringC = nullptr; if (ind >= 0) itemIndex = ind; }
+    FORCE_INLINE static void init(const int8_t ind, const char * const cstr)      { itemStringC = cstr; itemStringF = nullptr; if (ind >= 0) itemIndex = ind; }
 
     // Implementation-specific:
     // Draw an item either selected (pre_char) or not (space) with post_char
     // Menus may set up itemIndex, itemStringC/F and pass them to string-building or string-emitting functions
-    static void _draw(const bool sel, const uint8_t row, FSTR_P const fstr, const char pre_char, const char post_char);
+    static void _draw(const bool sel, const uint8_t row, FSTR_P const ftpl, const char pre_char, const char post_char);
 
     // Draw an item either selected ('>') or not (space) with post_char
-    FORCE_INLINE static void _draw(const bool sel, const uint8_t row, FSTR_P const fstr, const char post_char) {
-      _draw(sel, row, fstr, '>', post_char);
+    FORCE_INLINE static void _draw(const bool sel, const uint8_t row, FSTR_P const ftpl, const char post_char) {
+      _draw(sel, row, ftpl, '>', post_char);
     }
 };
 
 // STATIC_ITEM(LABEL,...)
 class MenuItem_static : public MenuItemBase {
   public:
-    static void draw(const uint8_t row, FSTR_P const fstr, const uint8_t style=SS_DEFAULT, const char *vstr=nullptr);
+    static void draw(const uint8_t row, FSTR_P const ftpl, const uint8_t style=SS_DEFAULT, const char *vstr=nullptr);
 };
 
 // BACK_ITEM(LABEL)
 class MenuItem_back : public MenuItemBase {
   public:
-    FORCE_INLINE static void draw(const bool sel, const uint8_t row, FSTR_P const fstr) {
-      _draw(sel, row, fstr, LCD_STR_UPLEVEL[0], LCD_STR_UPLEVEL[0]);
+    FORCE_INLINE static void draw(const bool sel, const uint8_t row, FSTR_P const ftpl) {
+      _draw(sel, row, ftpl, LCD_STR_UPLEVEL[0], LCD_STR_UPLEVEL[0]);
     }
     // Back Item action goes back one step in history
     FORCE_INLINE static void action(FSTR_P const=nullptr) { ui.go_back(); }
@@ -102,31 +102,31 @@ class MenuItem_confirm : public MenuItemBase {
       FSTR_P const yes,           // Right option label
       FSTR_P const no,            // Left option label
       const bool yesno,           // Is "yes" selected?
-      FSTR_P const pref,          // Prompt prefix
+      FSTR_P const fpre,          // Prompt prefix
       const char * const string,  // Prompt runtime string
-      FSTR_P const suff           // Prompt suffix
+      FSTR_P const fsuf           // Prompt suffix
     );
     static void select_screen(
       FSTR_P const yes, FSTR_P const no,
       selectFunc_t yesFunc, selectFunc_t noFunc,
-      FSTR_P const pref, const char * const string=nullptr, FSTR_P const suff=nullptr
+      FSTR_P const fpre, const char * const string=nullptr, FSTR_P const fsuf=nullptr
     );
     static void select_screen(
       FSTR_P const yes, FSTR_P const no,
       selectFunc_t yesFunc, selectFunc_t noFunc,
-      FSTR_P const pref, FSTR_P const fstr, FSTR_P const suff=nullptr
+      FSTR_P const fpre, FSTR_P const fstr, FSTR_P const fsuf=nullptr
     ) {
       #ifdef __AVR__
         char str[strlen_P(FTOP(fstr)) + 1];
         strcpy_P(str, FTOP(fstr));
-        select_screen(yes, no, yesFunc, noFunc, pref, str, suff);
+        select_screen(yes, no, yesFunc, noFunc, fpre, str, fsuf);
       #else
-        select_screen(yes, no, yesFunc, noFunc, pref, FTOP(fstr), suff);
+        select_screen(yes, no, yesFunc, noFunc, fpre, FTOP(fstr), fsuf);
       #endif
     }
     // Shortcut for prompt with "NO"/ "YES" labels
-    FORCE_INLINE static void confirm_screen(selectFunc_t yesFunc, selectFunc_t noFunc, FSTR_P const pref, const char * const string=nullptr, FSTR_P const suff=nullptr) {
-      select_screen(GET_TEXT_F(MSG_YES), GET_TEXT_F(MSG_NO), yesFunc, noFunc, pref, string, suff);
+    FORCE_INLINE static void confirm_screen(selectFunc_t yesFunc, selectFunc_t noFunc, FSTR_P const fpre, const char * const string=nullptr, FSTR_P const fsuf=nullptr) {
+      select_screen(GET_TEXT_F(MSG_YES), GET_TEXT_F(MSG_NO), yesFunc, noFunc, fpre, string, fsuf);
     }
 };
 
@@ -145,7 +145,10 @@ typedef union {
   uint16_t  uint16;
   uint32_t  uint32;
   celsius_t celsius;
+  void      *ptr;
+  FSTR_P    fstr;
 } chimera_t;
+
 extern chimera_t editable;
 
 // Base class for Menu Edit Items
@@ -208,7 +211,9 @@ void menu_main();
 void menu_move();
 
 #if HAS_MEDIA
-  void menu_media();
+  void menu_file_selector();
+  void menu_file_selector_sd();
+  void menu_file_selector_usb();
 #endif
 
 ////////////////////////////////////////////
@@ -220,7 +225,7 @@ void _lcd_draw_homing();
 #define HAS_LINE_TO_Z ANY(DELTA, PROBE_MANUALLY, MESH_BED_LEVELING, LCD_BED_TRAMMING)
 
 #if HAS_LINE_TO_Z
-  void line_to_z(const_float_t z);
+  void line_to_z(const float z);
 #endif
 
 #if ENABLED(PROBE_OFFSET_WIZARD)
@@ -232,7 +237,7 @@ void _lcd_draw_homing();
   void menu_advanced_settings();
 #endif
 
-#if ENABLED(LCD_BED_LEVELING) || (HAS_LEVELING && DISABLED(SLIM_LCD_MENUS))
+#if HAS_LEVELING
   void _lcd_toggle_bed_leveling();
 #endif
 
@@ -263,4 +268,8 @@ inline void clear_menu_history() { screen_history_depth = 0; }
 
 #if ANY(PROBE_MANUALLY, MESH_BED_LEVELING, X_AXIS_TWIST_COMPENSATION)
   extern uint8_t manual_probe_index;
+#endif
+
+#if ANY(CUSTOM_MENU_MAIN, CUSTOM_MENU_CONFIG)
+  template<bool> void _lcd_custom_menu_gcode(FSTR_P const fstr);
 #endif

@@ -39,7 +39,15 @@
 #if ENABLED(DELTA)
 
   /**
-   * M666: Set delta endstop adjustment
+   * M666: Set Delta endstop adjustments
+   *
+   * Adjust the endstop offsets on a Delta printer.
+   *
+   * Parameters:
+   *   None    Report current offsets
+   *   X<intint>  Adjustment for the X actuator endstop
+   *   Y<intint>  Adjustment for the Y actuator endstop
+   *   Z<int>  Adjustment for the Z actuator endstop
    */
   void GcodeSuite::M666() {
     DEBUG_SECTION(log_M666, "M666", DEBUGGING(LEVELING));
@@ -52,15 +60,17 @@
           is_err = true;
         else {
           delta_endstop_adj[i] = v;
-          if (DEBUGGING(LEVELING)) DEBUG_ECHOLNPGM("delta_endstop_adj[", AS_CHAR(AXIS_CHAR(i)), "] = ", v);
+          if (DEBUGGING(LEVELING)) DEBUG_ECHOLNPGM("delta_endstop_adj[", C(AXIS_CHAR(i)), "] = ", v);
         }
       }
     }
-    if (is_err) SERIAL_ECHOLNPGM("?M666 offsets must be <= 0");
+    if (is_err) SERIAL_ECHOLNPGM(GCODE_ERR_MSG("M666 offsets must be <= 0"));
     if (!is_set) M666_report();
   }
 
   void GcodeSuite::M666_report(const bool forReplay/*=true*/) {
+    TERN_(MARLIN_SMALL_BUILD, return);
+
     report_heading_etc(forReplay, F(STR_ENDSTOP_ADJUSTMENT));
     SERIAL_ECHOLNPGM_P(
         PSTR("  M666 X"), LINEAR_UNIT(delta_endstop_adj.a)
@@ -72,14 +82,22 @@
 #else
 
   /**
-   * M666: Set Dual Endstops offsets for X, Y, and/or Z.
-   *       With no parameters report current offsets.
+   * M666: Set Dual Endstop Offsets
    *
-   * For Triple / Quad Z Endstops:
-   *   Set Z2 Only: M666 S2 Z<offset>
-   *   Set Z3 Only: M666 S3 Z<offset>
-   *   Set Z4 Only: M666 S4 Z<offset>
-   *       Set All: M666 Z<offset>
+   * Adjust the offsets for dual (or multiple) endstops.
+   *
+   * Parameters:
+   *   None    Report current offsets
+   *   X<int>  Offset for the X axis endstops
+   *   Y<int>  Offset for the Y axis endstops
+   *   Z<int>  Offset for the Z axis endstops
+   *
+   * Example:
+   *  For Triple / Quad Z Endstops:
+   *    M666 S2 Z<offset> ; Set Z2 Only
+   *    M666 S3 Z<offset> ; Set Z3 Only
+   *    M666 S4 Z<offset> ; Set Z4 Only
+   *    M666 Z<offset>    ; Set All
    */
   void GcodeSuite::M666() {
     if (!parser.seen_any()) return M666_report();
@@ -105,6 +123,8 @@
   }
 
   void GcodeSuite::M666_report(const bool forReplay/*=true*/) {
+    TERN_(MARLIN_SMALL_BUILD, return);
+
     report_heading_etc(forReplay, F(STR_ENDSTOP_ADJUSTMENT));
     SERIAL_ECHOPGM("  M666");
     #if ENABLED(X_DUAL_ENDSTOPS)

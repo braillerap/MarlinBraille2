@@ -4,7 +4,6 @@
  *
  * Based on Sprinter and grbl.
  * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
- * Copyright (c) 2017 Victor Perez
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,8 +39,8 @@ static_assert(COUNT(servoDelay) == NUM_SERVOS, "SERVO_DELAY must be an array NUM
 static uint32_t servo_interrupt_priority = NVIC_EncodePriority(NVIC_GetPriorityGrouping(), TIM_IRQ_PRIO, TIM_IRQ_SUBPRIO);
 
 // This must be called after the STM32 Servo class has initialized the timer.
-// It may only be needed after the first call to attach(), but it is possible
-// that is is necessary after every detach() call. To be safe this is currently
+// It may only be needed after the first call to attach(), but it's possible
+// that this is needed after every detach() call. To be safe this is currently
 // called after every call to attach().
 static void fixServoTimerInterruptPriority() {
   NVIC_SetPriority(getTimerUpIrq(TIMER_SERVO), servo_interrupt_priority);

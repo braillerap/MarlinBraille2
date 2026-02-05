@@ -54,6 +54,16 @@
  *
  * With PRINTJOB_TIMER_AUTOSTART turning on heaters will start the print job timer
  *  (used by printingIsActive, etc.) and turning off heaters will stop the timer.
+ *
+ * With BED_ANNEALING_GCODE:
+ *
+ * M190 Parameters
+ *     T<seconds>: Cooldown time, for more gradual cooling. Use with R parameter.
+ *                 M190 R T - Cool the bed down over a given period of time.
+ *
+ * Examples
+ *  M190 R70 T600: Cool down to 70°C over a period of ten minutes.
+ *
  */
 void GcodeSuite::M140_M190(const bool isM190) {
 
@@ -81,19 +91,50 @@ void GcodeSuite::M140_M190(const bool isM190) {
 
   if (!got_temp) return;
 
-  thermalManager.setTargetBed(temp);
-  thermalManager.isHeatingBed() ? LCD_MESSAGE(MSG_BED_HEATING) : LCD_MESSAGE(MSG_BED_COOLING);
+  #if ENABLED(BED_ANNEALING_GCODE)
+    const bool anneal = isM190 && !no_wait_for_cooling && parser.seenval('T');
+    const millis_t anneal_ms = anneal ? parser.value_millis_from_seconds() : 0UL;
+  #else
+    constexpr bool anneal = false;
+  #endif
+
+  if (!anneal) {
+    thermalManager.setTargetBed(temp);
+    thermalManager.isHeatingBed() ? LCD_MESSAGE(MSG_BED_HEATING) : LCD_MESSAGE(MSG_BED_COOLING);
+  }
 
   // With PRINTJOB_TIMER_AUTOSTART, M190 can start the timer, and M140 can stop it
   TERN_(PRINTJOB_TIMER_AUTOSTART, thermalManager.auto_job_check_timer(isM190, !isM190));
 
-  if (isM190)
+  if (isM190) {
+    #if ENABLED(BED_ANNEALING_GCODE)
+      if (anneal) {
+        LCD_MESSAGE(MSG_BED_ANNEALING);
+        const millis_t wait_ms = anneal_ms / (thermalManager.degBed() - temp);
+        // Loop from current temp down to the target
+        for (celsius_t cool_temp = thermalManager.degBed() - 1; cool_temp >= temp; --cool_temp) {
+          thermalManager.setTargetBed(cool_temp); // Cool by one degree
+          dwell(wait_ms);   // Wait while going to the next degree
+        }
+        return;
+      }
+    #endif
+
     thermalManager.wait_for_bed(no_wait_for_cooling);
-  else
+
+    #if ENABLED(REMAINING_TIME_AUTOPRIME)
+      if (card.isStillPrinting()) {
+        print_job_timer.primeRemainingTimeEstimate(card.getIndex(), card.getFileSize());
+        //SERIAL_ECHOLN(F("M190 - Prime Remaining Time Estimate: "), print_job_timer.duration(), C(' '), card.getIndex(), C(' '), card.getFileSize() - card.getIndex());
+      }
+    #endif
+  }
+  else {
     ui.set_status_reset_fn([]{
       const celsius_t c = thermalManager.degTargetBed();
       return c < 30 || thermalManager.degBedNear(c);
     });
+  }
 }
 
 #endif // HAS_HEATED_BED

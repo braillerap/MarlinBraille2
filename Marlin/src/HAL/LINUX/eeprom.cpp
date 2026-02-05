@@ -35,7 +35,7 @@
 uint8_t buffer[MARLIN_EEPROM_SIZE];
 char filename[] = "eeprom.dat";
 
-size_t PersistentStore::capacity() { return MARLIN_EEPROM_SIZE; }
+size_t PersistentStore::capacity() { return MARLIN_EEPROM_SIZE - eeprom_exclude_size; }
 
 bool PersistentStore::access_start() {
   const char eeprom_erase_value = 0xFF;
@@ -45,7 +45,7 @@ bool PersistentStore::access_start() {
   fseek(eeprom_file, 0L, SEEK_END);
   std::size_t file_size = ftell(eeprom_file);
 
-  if (file_size < MARLIN_EEPROM_SIZE) {
+  if (file_size < long(MARLIN_EEPROM_SIZE)) {
     memset(buffer + file_size, eeprom_erase_value, MARLIN_EEPROM_SIZE - file_size);
   }
   else {

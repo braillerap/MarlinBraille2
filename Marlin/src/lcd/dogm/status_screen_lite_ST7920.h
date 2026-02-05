@@ -31,7 +31,7 @@ class ST7920_Lite_Status_Screen {
     } current_bits;
 
     static void cs()                        { ST7920_cs(); current_bits.synced = false; }
-    static void ncs()                       { ST7920_cs(); current_bits.synced = false; }
+    static void ncs()                       { ST7920_ncs(); current_bits.synced = false; }
     static void sync_cmd()                  { ST7920_set_cmd(); }
     static void sync_dat()                  { ST7920_set_dat(); }
     static void write_byte(const uint8_t w) { ST7920_write_byte(w); }
@@ -83,8 +83,10 @@ class ST7920_Lite_Status_Screen {
     static void draw_bed_temp(const int16_t temp, const int16_t target, bool forceUpdate=false);
     static void draw_fan_speed(const uint8_t value);
     #if HAS_PRINT_PROGRESS
+      #if HAS_TIME_DISPLAY
+        static char* prepare_time_string(const duration_t &time, char prefix=' ');
+      #endif
       static void draw_progress_bar(const uint8_t value);
-      static char* prepare_time_string(const duration_t &time, char prefix=' ');
       static void draw_progress_string(uint8_t addr, const char *str);
       static void update_progress(const bool forceUpdate);
     #endif

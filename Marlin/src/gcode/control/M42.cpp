@@ -37,24 +37,23 @@
   #define OUTPUT_OPEN_DRAIN OUTPUT_OPEN_DRAIN
 #endif
 
-bool pin_is_protected(const pin_t pin);
-
 void protected_pin_err() {
   SERIAL_ERROR_MSG(STR_ERR_PROTECTED_PIN);
 }
 
 /**
- * M42: Change pin status via GCode
+ * M42: Change pin status via G-Code
  *
- *  P<pin>  Pin number (LED if omitted)
- *          For LPC1768 specify pin P1_02 as M42 P102,
- *                                  P1_20 as M42 P120, etc.
+ * Parameters:
+ *   P<pin>  Pin number (LED if omitted)
+ *           For LPC1768 specify pin P1_02 as M42 P102,
+ *                                   P1_20 as M42 P120, etc.
  *
- *  S<byte> Pin status from 0 - 255
- *  I       Flag to ignore Marlin's pin protection
+ *   S<byte> Pin status from 0-255
+ *   I       Flag to ignore Marlin's pin protection
  *
- *  T<mode> Pin mode: 0=INPUT  1=OUTPUT  2=INPUT_PULLUP  3=INPUT_PULLDOWN
- *                    4=INPUT_ANALOG  5=OUTPUT_OPEN_DRAIN
+ *   T<mode> Pin mode: 0=INPUT | 1=OUTPUT | 2=INPUT_PULLUP | 3=INPUT_PULLDOWN
+ *                     4=INPUT_ANALOG | 5=OUTPUT_OPEN_DRAIN
  */
 void GcodeSuite::M42() {
   const int pin_index = PARSED_PIN_INDEX('P', GET_PIN_MAP_INDEX(LED_PIN));
@@ -62,7 +61,7 @@ void GcodeSuite::M42() {
 
   const pin_t pin = GET_PIN_MAP_PIN(pin_index);
 
-  if (!parser.boolval('I') && pin_is_protected(pin)) return protected_pin_err();
+  if (!parser.boolval('I') && marlin.pin_is_protected(pin)) return protected_pin_err();
 
   bool avoidWrite = false;
   if (parser.seenval('T')) {
@@ -79,7 +78,7 @@ void GcodeSuite::M42() {
       #ifdef OUTPUT_OPEN_DRAIN
         case 5: pinMode(pin, OUTPUT_OPEN_DRAIN); break;
       #endif
-      default: SERIAL_ECHOLNPGM("Invalid Pin Mode"); return;
+      default: SERIAL_ECHOLNPGM(GCODE_ERR_MSG("Invalid Pin Mode")); return;
     }
   }
 
@@ -94,7 +93,7 @@ void GcodeSuite::M42() {
   #endif
 
   if (avoidWrite) {
-    SERIAL_ECHOLNPGM("?Cannot write to INPUT");
+    SERIAL_ECHOLNPGM(GCODE_ERR_MSG("Cannot write to INPUT"));
     return;
   }
 

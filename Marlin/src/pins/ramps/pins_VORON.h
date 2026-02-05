@@ -23,7 +23,7 @@
 
 /**
  * VORON Design v2 pin assignments
- * See https://github.com/mzbotreprap/VORON/blob/master/Firmware/Marlin/pins_RAMPS_VORON.h
+ * See https://github.com/thaytan/VORON/blob/master/Firmware/Marlin/pins_RAMPS_VORON.h
  * ATmega2560
  */
 
@@ -49,6 +49,6 @@
 #include "pins_RAMPS.h"
 
 //
-// LCDs and Controllers
+// LCD / Controller
 //
 #undef BEEPER_PIN

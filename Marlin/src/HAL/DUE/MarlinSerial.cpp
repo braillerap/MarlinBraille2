@@ -31,7 +31,6 @@
 
 #include "MarlinSerial.h"
 #include "InterruptVectors.h"
-#include "../../MarlinCore.h"
 
 template<typename Cfg> typename MarlinSerial<Cfg>::ring_buffer_r MarlinSerial<Cfg>::rx_buffer = { 0, 0, { 0 } };
 template<typename Cfg> typename MarlinSerial<Cfg>::ring_buffer_t MarlinSerial<Cfg>::tx_buffer = { 0 };
@@ -473,7 +472,6 @@ void MarlinSerial<Cfg>::flushTX() {
     // the hardware finished transmission (TXC is set).
   }
 }
-
 
 // If not using the USB port as serial port
 #if defined(SERIAL_PORT) && SERIAL_PORT >= 0

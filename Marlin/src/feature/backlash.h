@@ -72,7 +72,7 @@ public:
     return has_measurement(X_AXIS) || has_measurement(Y_AXIS) || has_measurement(Z_AXIS);
   }
 
-  static void add_correction_steps(const int32_t &da, const int32_t &db, const int32_t &dc, const AxisBits dm, block_t * const block);
+  static void add_correction_steps(const xyze_long_t &dist, const AxisBits dm, block_t * const block);
   static int32_t get_applied_steps(const AxisEnum axis);
 
   #if ENABLED(BACKLASH_GCODE)
@@ -81,10 +81,10 @@ public:
     static void set_correction(const float v) { set_correction_uint8(_MAX(0, _MIN(1.0, v)) * all_on + 0.5f); }
     static float get_correction() { return float(get_correction_uint8()) / all_on; }
     static void set_distance_mm(const AxisEnum axis, const float v);
-    static float get_distance_mm(const AxisEnum axis) {return distance_mm[axis];}
+    static float get_distance_mm(const AxisEnum axis) { return distance_mm[axis]; }
     #ifdef BACKLASH_SMOOTHING_MM
       static void set_smoothing_mm(const float v);
-      static float get_smoothing_mm() {return smoothing_mm;}
+      static float get_smoothing_mm() { return smoothing_mm; }
     #endif
   #endif
 

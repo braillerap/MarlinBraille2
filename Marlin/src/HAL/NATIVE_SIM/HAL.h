@@ -1,9 +1,9 @@
 /**
  * Marlin 3D Printer Firmware
- *
  * Copyright (c) 2021 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
- * Copyright (c) 2016 Bob Cousins bobcousins42@googlemail.com
- * Copyright (c) 2015-2016 Nico Tonnhofer wurstnase.reprap@gmail.com
+ *
+ * Based on Sprinter and grbl.
+ * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -52,7 +52,9 @@ uint8_t _getc();
 // ------------------------
 
 #define CPU_32_BIT
-#define SHARED_SERVOS HAS_SERVOS  // Use shared/servos.cpp
+
+class Servo;
+typedef Servo hal_servo_t;
 
 #define F_CPU 100000000
 #define SystemCoreClock F_CPU
@@ -71,37 +73,10 @@ extern MSerialT serial_stream_2;
 extern MSerialT serial_stream_3;
 
 #define _MSERIAL(X) serial_stream_##X
-#define MSERIAL(X) _MSERIAL(X)
 
-#if WITHIN(SERIAL_PORT, 0, 3)
-  #define MYSERIAL1 MSERIAL(SERIAL_PORT)
-#else
-  #error "SERIAL_PORT must be from 0 to 3. Please update your configuration."
-#endif
-
-#ifdef SERIAL_PORT_2
-  #if WITHIN(SERIAL_PORT_2, 0, 3)
-    #define MYSERIAL2 MSERIAL(SERIAL_PORT_2)
-  #else
-    #error "SERIAL_PORT_2 must be from 0 to 3. Please update your configuration."
-  #endif
-#endif
-
-#ifdef MMU2_SERIAL_PORT
-  #if WITHIN(MMU2_SERIAL_PORT, 0, 3)
-    #define MMU2_SERIAL MSERIAL(MMU2_SERIAL_PORT)
-  #else
-    #error "MMU2_SERIAL_PORT must be from 0 to 3. Please update your configuration."
-  #endif
-#endif
-
-#ifdef LCD_SERIAL_PORT
-  #if WITHIN(LCD_SERIAL_PORT, 0, 3)
-    #define LCD_SERIAL MSERIAL(LCD_SERIAL_PORT)
-  #else
-    #error "LCD_SERIAL_PORT must be from 0 to 3. Please update your configuration."
-  #endif
-#endif
+#define SERIAL_INDEX_MIN 0
+#define SERIAL_INDEX_MAX 3
+#include "../shared/serial_ports.h"
 
 // ------------------------
 // Interrupts
@@ -220,9 +195,9 @@ public:
   static void isr_on()  {}
   static void isr_off() {}
 
-  static void delay_ms(const int ms) { _delay_ms(ms); }
+  static void delay_ms(const int ms) { delay(ms); }
 
-  // Tasks, called from idle()
+  // Tasks, called from marlin.idle()
   static void idletask();
 
   // Reset
@@ -259,8 +234,20 @@ public:
    * No option to invert the duty cycle [default = false]
    * No option to change the scale of the provided value to enable finer PWM duty control [default = 255]
    */
-  static void set_pwm_duty(const pin_t pin, const uint16_t v, const uint16_t=255, const bool=false) {
-    analogWrite(pin, v);
+  static void set_pwm_duty(const pin_t pin, const uint16_t v, const uint16_t v_size=255, const bool invert=false) {
+    auto value = map(v, 0, v_size, 0, UINT16_MAX);
+    value = invert ? UINT16_MAX - value : value;
+    analogWrite(pin, value);
   }
+
+  static void set_pwm_frequency(const pin_t, int) {}
+
+  #ifndef HAS_LIBBSD
+    /**
+     * Redirect missing strlcpy here
+     */
+    static size_t _strlcpy(char *dst, const char *src, size_t dsize);
+    #define strlcpy hal._strlcpy
+  #endif
 
 };

@@ -43,10 +43,6 @@
 
 typedef int8_t mixer_perc_t;
 
-#ifndef MIXING_VIRTUAL_TOOLS
-  #define MIXING_VIRTUAL_TOOLS 1
-#endif
-
 enum MixTool {
     FIRST_USER_VIRTUAL_TOOL = 0
   , LAST_USER_VIRTUAL_TOOL = MIXING_VIRTUAL_TOOLS - 1
@@ -178,9 +174,9 @@ class Mixer {
     static float prev_z;
 
     // Update the current mix from the gradient for a given Z
-    static void update_gradient_for_z(const_float_t z);
+    static void update_gradient_for_z(const float z);
     static void update_gradient_for_planner_z();
-    static void gradient_control(const_float_t z) {
+    static void gradient_control(const float z) {
       if (gradient.enabled) {
         if (z >= gradient.end_z)
           T(gradient.end_vtool);

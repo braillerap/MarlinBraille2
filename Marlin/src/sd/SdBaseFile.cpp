@@ -39,7 +39,6 @@
 
 #include "SdBaseFile.h"
 
-#include "../MarlinCore.h"
 SdBaseFile *SdBaseFile::cwd_ = 0;   // Pointer to Current Working Directory
 
 // callback function for date/time
@@ -253,12 +252,14 @@ bool SdBaseFile::exists(const char *name) {
  *
  * \return For success fgets() returns the length of the string in \a str.
  * If no data is read, fgets() returns zero for EOF or -1 if an error occurred.
- **/
+ */
 int16_t SdBaseFile::fgets(char *str, int16_t num, char *delim) {
+  if (!str || num <= 1) return -1; // Ensure space for at least '\0'
+
   char ch;
   int16_t n = 0;
   int16_t r = -1;
-  while ((n + 1) < num && (r = read(&ch, 1)) == 1) {
+  while (n < num - 1 && (r = read(&ch, 1)) == 1) {
     // delete CR
     if (ch == '\r') continue;
     str[n++] = ch;
@@ -269,10 +270,7 @@ int16_t SdBaseFile::fgets(char *str, int16_t num, char *delim) {
       if (strchr(delim, ch)) break;
     }
   }
-  if (r < 0) {
-    // read error
-    return -1;
-  }
+  if (r < 0) return -1; // read error
   str[n] = '\0';
   return n;
 }
@@ -342,7 +340,9 @@ int8_t SdBaseFile::lsPrintNext(const uint8_t flags, const uint8_t indent) {
   uint8_t w = 0;
 
   while (1) {
-    if (read(&dir, sizeof(dir)) != sizeof(dir)) return 0;
+    const int16_t r = read(&dir, sizeof(dir));
+    if (r < 0) return -1;
+    if (r != sizeof(dir)) return 0;
     if (dir.name[0] == DIR_NAME_FREE) return 0;
 
     // skip deleted entry and entries for . and  ..
@@ -708,7 +708,7 @@ bool SdBaseFile::open(SdBaseFile * const dirFile, const uint8_t dname[11]
               }
               // Get LFN sequence number
               lfnSequenceNumber = pvFat->sequenceNumber & 0x1F;
-              if WITHIN(lfnSequenceNumber, 1, reqEntriesNum) {
+              if (WITHIN(lfnSequenceNumber, 1, reqEntriesNum)) {
                 // Check checksum for all other entries with the starting checksum fetched before
                 if (lfnChecksum == pvFat->checksum) {
                   // Set chunk of LFN from VFAT entry into lfnName
@@ -1277,7 +1277,8 @@ int SdBaseFile::peek() {
   filepos_t pos;
   getpos(&pos);
   int c = read();
-  if (c >= 0) setpos(&pos);
+  if (c < 0) return -1;
+  setpos(&pos);
   return c;
 }
 
@@ -1295,7 +1296,6 @@ static void print2u(const uint8_t v) {
  * \param[in] fatDate The date field from a directory entry.
  */
 
-
 /**
  * %Print a directory date field.
  *
@@ -1311,7 +1311,6 @@ void SdBaseFile::printFatDate(const uint16_t fatDate) {
   SERIAL_CHAR('-');
   print2u(FAT_DAY(fatDate));
 }
-
 
 /**
  * %Print a directory time field.
@@ -1348,8 +1347,10 @@ bool SdBaseFile::printName() {
  * If an error occurs or end of file is reached -1 is returned.
  */
 int16_t SdBaseFile::read() {
-  uint8_t b;
-  return read(&b, 1) == 1 ? b : -1;
+  uint8_t b = 0;
+  const int16_t r = read(&b, 1);
+  if (r != 1) return -1;
+  return static_cast<int16_t>(b);
 }
 
 /**
@@ -1422,11 +1423,13 @@ int16_t SdBaseFile::read(void * const buf, uint16_t nbyte) {
  *
  * \param[out] dir The dir_t struct that will receive the data.
  *
- * \return For success readDir() returns the number of bytes read.
- * A value of zero will be returned if end of file is reached.
- * If an error occurs, readDir() returns -1.  Possible errors include
- * readDir() called before a directory has been opened, this is not
- * a directory file or an I/O error occurred.
+ * \return For success return a non-zero value (number of bytes read).
+ *         A value of zero will be returned if end of dir is reached.
+ *         If an error occurs, readDir() returns -1. Possible errors:
+ *           - readDir() called on unopened dir
+ *           - not a directory file
+ *           - bad dir entry
+ *           - I/O error
  */
 int8_t SdBaseFile::readDir(dir_t * const dir, char * const longFilename) {
   int16_t n;
@@ -1488,7 +1491,7 @@ int8_t SdBaseFile::readDir(dir_t * const dir, char * const longFilename) {
                   longFilename[idx] = utf16_ch & 0xFF;
                   longFilename[idx + 1] = (utf16_ch >> 8) & 0xFF;
                 #else
-                  // Replace all multibyte characters to '_'
+                  // Replace multibyte character with '_'
                   longFilename[n + i] = (utf16_ch > 0xFF) ? '_' : (utf16_ch & 0xFF);
                 #endif
               }

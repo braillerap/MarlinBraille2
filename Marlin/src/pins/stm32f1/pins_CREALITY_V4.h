@@ -57,11 +57,15 @@
 #endif
 
 #if ENABLED(IIC_BL24CXX_EEPROM)
-  #define IIC_EEPROM_SDA                    PA11
-  #define IIC_EEPROM_SCL                    PA12
-  #define MARLIN_EEPROM_SIZE               0x800  // 2K (24C16)
+  #ifndef IIC_EEPROM_SDA
+    #define IIC_EEPROM_SDA                  PA11
+  #endif
+  #ifndef IIC_EEPROM_SCL
+    #define IIC_EEPROM_SCL                  PA12
+  #endif
+  #define MARLIN_EEPROM_SIZE              0x800U  // 2K (24C16)
 #elif ENABLED(SDCARD_EEPROM_EMULATION)
-  #define MARLIN_EEPROM_SIZE               0x800  // 2K
+  #define MARLIN_EEPROM_SIZE              0x800U  // 2K
 #endif
 
 //
@@ -90,6 +94,13 @@
 
 #ifndef Z_MIN_PROBE_PIN
   #define Z_MIN_PROBE_PIN                   PB1   // BLTouch IN
+#endif
+
+//
+// Probe enable
+//
+#if ENABLED(PROBE_ENABLE_DISABLE) && !defined(PROBE_ENABLE_PIN)
+  #define PROBE_ENABLE_PIN            SERVO0_PIN
 #endif
 
 //
@@ -162,6 +173,18 @@
 #define ONBOARD_SDIO
 #define NO_SD_HOST_DRIVE                          // This board's SD is only seen by the printer
 
+/**    Debug port
+ *       -----
+ *       | 1 | VCC
+ *       | 2 | PA13
+ *       | 3 | PA14
+ *       | 4 | GND
+ *       -----
+ */
+
+#define DEBUG_02_PIN                        PA13
+#define DEBUG_03_PIN                        PA14
+
 #if ANY(RET6_12864_LCD, HAS_DWIN_E3V2, IS_DWIN_MARLINUI)
 
   /**
@@ -174,14 +197,30 @@
    *   GND | 9 10 | 5V
    *        ------
    */
-  #define EXP3_01_PIN                       PC6
-  #define EXP3_02_PIN                       PB2
-  #define EXP3_03_PIN                       PB10
-  #define EXP3_04_PIN                       PB11
-  #define EXP3_05_PIN                       PB14
-  #define EXP3_06_PIN                       PB13
-  #define EXP3_07_PIN                       PB12
-  #define EXP3_08_PIN                       PB15
+  #ifndef EXP3_01_PIN
+    #define EXP3_01_PIN                     PC6
+  #endif
+  #ifndef EXP3_02_PIN
+    #define EXP3_02_PIN                     PB2
+  #endif
+  #ifndef EXP3_03_PIN
+    #define EXP3_03_PIN                     PB10
+  #endif
+  #ifndef EXP3_04_PIN
+    #define EXP3_04_PIN                     PB11
+  #endif
+  #ifndef EXP3_05_PIN
+    #define EXP3_05_PIN                     PB14
+  #endif
+  #ifndef EXP3_06_PIN
+    #define EXP3_06_PIN                     PB13
+  #endif
+  #ifndef EXP3_07_PIN
+    #define EXP3_07_PIN                     PB12
+  #endif
+  #ifndef EXP3_08_PIN
+    #define EXP3_08_PIN                     PB15
+  #endif
 
 #elif ANY(VET6_12864_LCD, DWIN_VET6_CREALITY_LCD)
 
@@ -234,9 +273,7 @@
 
 #elif ENABLED(FYSETC_MINI_12864_2_1)
 
-  #ifndef NO_CONTROLLER_CUSTOM_WIRING_WARNING
-    #error "CAUTION! FYSETC_MINI_12864_2_1 and clones require wiring modifications. See 'pins_CREALITY_V4.h' for details. Define NO_CONTROLLER_CUSTOM_WIRING_WARNING to suppress this warning."
-  #endif
+  CONTROLLER_WARNING("CREALITY_V4", "FYSETC_MINI_12864_2_1 and clones")
 
   #if SD_CONNECTION_IS(LCD)
     #error "The LCD SD Card is not connected with this configuration."
@@ -289,13 +326,26 @@
 // Changing these will not change the pin they are on.
 
 // Hardware UART pins
-#define UART1_TX_PIN                        PA9   // default uses CH340 RX
-#define UART1_RX_PIN                        PA10  // default uses CH340 TX
-#define UART2_TX_PIN                        PA2   // default uses HEATER_BED_PIN
-#define UART2_RX_PIN                        PA3   // not connected
-#define UART3_TX_PIN                        PB10  // default uses LCD connector
-#define UART3_RX_PIN                        PB11  // default uses LCD connector
-#define UART4_TX_PIN                        PC10  // default uses sdcard SDIO_D2
-#define UART4_RX_PIN                        PC11  // default uses sdcard SDIO_D3
-#define UART5_TX_PIN                        PC12  // default uses sdcard SDIO_CK
-#define UART5_RX_PIN                        PD2   // default uses sdcard SDIO_CMD
+#ifdef ARDUINO_ARCH_MFL                           // GD32 MFL UARTs start from 0
+  #define UART0_TX_PIN                      PA9   // default uses CH340 RX
+  #define UART0_RX_PIN                      PA10  // default uses CH340 TX
+  #define UART1_TX_PIN                      PA2   // default uses HEATER_BED_PIN
+  #define UART1_RX_PIN                      PA3   // not connected
+  #define UART2_TX_PIN                      PB10  // default uses LCD connector
+  #define UART2_RX_PIN                      PB11  // default uses LCD connector
+  #define UART3_TX_PIN                      PC10  // default uses sdcard SDIO_D2
+  #define UART3_RX_PIN                      PC11  // default uses sdcard SDIO_D3
+  #define UART4_TX_PIN                      PC12  // default uses sdcard SDIO_CK
+  #define UART4_RX_PIN                      PD2   // default uses sdcard SDIO_CMD
+#else
+  #define UART1_TX_PIN                      PA9   // default uses CH340 RX
+  #define UART1_RX_PIN                      PA10  // default uses CH340 TX
+  #define UART2_TX_PIN                      PA2   // default uses HEATER_BED_PIN
+  #define UART2_RX_PIN                      PA3   // not connected
+  #define UART3_TX_PIN                      PB10  // default uses LCD connector
+  #define UART3_RX_PIN                      PB11  // default uses LCD connector
+  #define UART4_TX_PIN                      PC10  // default uses sdcard SDIO_D2
+  #define UART4_RX_PIN                      PC11  // default uses sdcard SDIO_D3
+  #define UART5_TX_PIN                      PC12  // default uses sdcard SDIO_CK
+  #define UART5_RX_PIN                      PD2   // default uses sdcard SDIO_CMD
+#endif

@@ -61,23 +61,46 @@ void save_reset_reason() {
   wdt_disable();
 }
 
+#include "registers.h"
+
+MarlinHAL::MarlinHAL() {
+  TERN_(HAL_AVR_DIRTY_INIT, _ATmega_resetperipherals()); // Clean-wipe the device state.
+}
+
 void MarlinHAL::init() {
   // Init Servo Pins
-  #define INIT_SERVO(N) OUT_WRITE(SERVO##N##_PIN, LOW)
   #if HAS_SERVO_0
-    INIT_SERVO(0);
+    OUT_WRITE(SERVO0_PIN, LOW);
   #endif
   #if HAS_SERVO_1
-    INIT_SERVO(1);
+    OUT_WRITE(SERVO1_PIN, LOW);
   #endif
   #if HAS_SERVO_2
-    INIT_SERVO(2);
+    OUT_WRITE(SERVO2_PIN, LOW);
   #endif
   #if HAS_SERVO_3
-    INIT_SERVO(3);
+    OUT_WRITE(SERVO3_PIN, LOW);
+  #endif
+  #if HAS_SERVO_4
+    OUT_WRITE(SERVO4_PIN, LOW);
+  #endif
+  #if HAS_SERVO_5
+    OUT_WRITE(SERVO5_PIN, LOW);
   #endif
 
   init_pwm_timers();   // Init user timers to default frequency - 1000HZ
+
+  #if PIN_EXISTS(BEEPER) && ENABLED(HAL_AVR_DIRTY_INIT) && DISABLED(ATMEGA_NO_BEEPFIX)
+    // Make sure no alternative is locked onto the BEEPER.
+    // This fixes the issue where the ATmega is constantly beeping.
+    // Might disable other peripherals using the pin; to circumvent that please undefine one of the above things!
+    // The true culprit is the AVR ArduinoCore that enables peripherals redundantly.
+    // (USART1 on the GeeeTech GT2560)
+    // https://youtube.be/jMgCvRXkexk
+    _ATmega_savePinAlternate(BEEPER_PIN);
+
+    OUT_WRITE(BEEPER_PIN, LOW);
+  #endif
 }
 
 void MarlinHAL::reboot() {
@@ -96,7 +119,6 @@ void MarlinHAL::reboot() {
 #if ENABLED(USE_WATCHDOG)
 
   #include <avr/wdt.h>
-  #include "../../MarlinCore.h"
 
   // Initialize watchdog with 8s timeout, if possible. Otherwise, make it 4s.
   void MarlinHAL::watchdog_init() {
@@ -131,7 +153,7 @@ void MarlinHAL::reboot() {
     ISR(WDT_vect) {
       sei();  // With the interrupt driven serial we need to allow interrupts.
       SERIAL_ERROR_MSG(STR_WATCHDOG_FIRED);
-      minkill();  // interrupt-safe final kill and infinite loop
+      marlin.minkill();  // interrupt-safe final kill and infinite loop
     }
   #endif
 

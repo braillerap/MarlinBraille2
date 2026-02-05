@@ -4,7 +4,6 @@
  *
  * Based on Sprinter and grbl.
  * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
- * Copyright (c) 2017 Victor Perez
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -93,7 +92,7 @@ void install_min_serial() {
   HAL_min_serial_out = &TX;
 }
 
-#if DISABLED(DYNAMIC_VECTORTABLE) && DISABLED(STM32F0xx) // Cortex M0 can't branch to a symbol that's too far, so we have a specific hack for them
+#if NONE(DYNAMIC_VECTORTABLE, STM32F0xx) // Cortex M0 can't branch to a symbol that's too far, so we have a specific hack for them
 extern "C" {
   __attribute__((naked)) void JumpHandler_ASM() {
     __asm__ __volatile__ (

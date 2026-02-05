@@ -36,7 +36,12 @@
   #define XATC_Y_POSITION ((probe.max_y() - probe.min_y())/2)
 #endif
 
-void _goto_manual_move_z(const_float_t);
+#if ALL(TOUCH_SCREEN, HAS_GRAPHICAL_TFT)
+  #include "../tft/tft.h"
+  #include "../tft/touch.h"
+#endif
+
+void _goto_manual_move_z(const float);
 
 float measured_z, z_offset;
 
@@ -94,10 +99,10 @@ void xatc_wizard_menu() {
     STATIC_ITEM(MSG_MOVE_NOZZLE_TO_BED, SS_CENTER|SS_INVERT);
 
   STATIC_ITEM_F(F("Z="), SS_CENTER, ftostr42_52(current_position.z));
-  STATIC_ITEM(MSG_ZPROBE_ZOFFSET, SS_LEFT, ftostr42_52(calculated_z_offset));
+  STATIC_ITEM_N(Z_AXIS, MSG_ZPROBE_OFFSET_N, SS_LEFT, ftostr42_52(calculated_z_offset));
 
-  SUBMENU(MSG_MOVE_1MM,  []{ _goto_manual_move_z( 1);    });
-  SUBMENU(MSG_MOVE_01MM, []{ _goto_manual_move_z( 0.1f); });
+  SUBMENU_S(F("1.0"), MSG_MOVE_N_MM, []{ _goto_manual_move_z( 1.0f); });
+  SUBMENU_S(F("0.1"), MSG_MOVE_N_MM, []{ _goto_manual_move_z( 0.1f); });
 
   if ((FINE_MANUAL_MOVE) > 0.0f && (FINE_MANUAL_MOVE) < 0.1f)
     SUBMENU_f(F(STRINGIFY(FINE_MANUAL_MOVE)), MSG_MOVE_N_MM, []{ _goto_manual_move_z(float(FINE_MANUAL_MOVE)); });
@@ -113,8 +118,8 @@ void xatc_wizard_menu() {
 void xatc_wizard_moving() {
   if (ui.should_draw()) {
     MString<9> msg;
-    msg.setf(F("%i / %u"), manual_probe_index + 1, XATC_MAX_POINTS);
-    MenuEditItemBase::draw_edit_screen(GET_TEXT_F(MSG_LEVEL_BED_NEXT_POINT), &msg);
+    msg.setf(F(" %i / %u"), manual_probe_index + 1, XATC_MAX_POINTS);
+    MenuItem_static::draw(LCD_HEIGHT / 2, GET_TEXT_F(MSG_LEVEL_BED_NEXT_POINT), SS_CENTER, msg);
   }
   ui.refresh(LCDVIEW_CALL_NO_REDRAW);
   if (!ui.wait_for_move) ui.goto_screen(xatc_wizard_menu);
@@ -154,7 +159,7 @@ void xatc_wizard_goto_next_point() {
     z_offset /= XATC_MAX_POINTS;
 
     // Subtract the average from the values found with this wizard.
-    // This way they are indipendent from the z-offset
+    // This way they are independent from the z-offset
     for (uint8_t i = 0; i < XATC_MAX_POINTS; ++i) xatc.z_offset[i] -= z_offset;
 
     ui.goto_screen(xatc_wizard_update_z_offset);

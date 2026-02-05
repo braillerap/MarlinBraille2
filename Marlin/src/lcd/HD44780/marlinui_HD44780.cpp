@@ -331,15 +331,24 @@ void MarlinUI::set_custom_characters(const HD44780CharSet screen_charset/*=CHARS
 
   #endif // HAS_MEDIA
 
-  #if ENABLED(SHOW_BOOTSCREEN)
-    // Set boot screen corner characters
-    if (screen_charset == CHARSET_BOOT) {
-      for (uint8_t i = 4; i--;)
-        createChar_P(i, corner[i]);
-    }
-    else
-  #endif
-    { // Info Screen uses 5 special characters
+  switch (screen_charset) {
+
+    #if ENABLED(SHOW_BOOTSCREEN)
+      case CHARSET_BOOT: {
+        // Set boot screen corner characters
+        for (uint8_t i = 4; i--;) createChar_P(i, corner[i]);
+      } break;
+    #endif
+
+    #if ENABLED(SHOW_CUSTOM_BOOTSCREEN)
+      case CHARSET_BOOT_CUSTOM: {
+        for (uint8_t i = COUNT(customBootChars); i--;)
+          createChar_P(i, customBootChars[i]);
+      } break;
+    #endif
+
+    default: {
+      // Info Screen uses 5 special characters
       createChar_P(LCD_STR_BEDTEMP[0], bedTemp);
       createChar_P(LCD_STR_DEGREE[0], degree);
       createChar_P(LCD_STR_THERMOMETER[0], thermometer);
@@ -361,7 +370,9 @@ void MarlinUI::set_custom_characters(const HD44780CharSet screen_charset/*=CHARS
             createChar_P(LCD_STR_FOLDER[0], folder);
           #endif
         }
-    }
+    } break;
+
+  }
 
 }
 
@@ -400,16 +411,52 @@ bool MarlinUI::detected() {
   return TERN1(DETECT_I2C_LCD_DEVICE, lcd.LcdDetected() == 1);
 }
 
+#if ENABLED(SHOW_CUSTOM_BOOTSCREEN)
+
+  #ifndef CUSTOM_BOOTSCREEN_X
+    #define CUSTOM_BOOTSCREEN_X -1
+  #endif
+  #ifndef CUSTOM_BOOTSCREEN_Y
+    #define CUSTOM_BOOTSCREEN_Y ((LCD_HEIGHT - COUNT(custom_boot_lines)) / 2)
+  #endif
+  #ifndef CUSTOM_BOOTSCREEN_TIMEOUT
+    #define CUSTOM_BOOTSCREEN_TIMEOUT 2500
+  #endif
+
+  void MarlinUI::draw_custom_bootscreen(const uint8_t/*=0*/) {
+    set_custom_characters(CHARSET_BOOT_CUSTOM);
+    lcd.clear();
+    const int8_t sx = CUSTOM_BOOTSCREEN_X;
+    const uint8_t sy = CUSTOM_BOOTSCREEN_Y;
+    for (lcd_uint_t i = 0; i < COUNT(custom_boot_lines); ++i) {
+      PGM_P const pstr = (PGM_P)pgm_read_ptr(&custom_boot_lines[i]);
+      const uint8_t clen = utf8_strlen_P(pstr);
+      const lcd_uint_t x = sx >= 0 ? sx : (LCD_WIDTH - clen) / 2;
+      for (lcd_uint_t j = 0; j < clen; ++j) {
+        const lchar_t c = pgm_read_byte(&pstr[j]);
+        lcd_put_lchar(x + j, sy + i, c == '\x08' ? '\x00' : c);
+      }
+    }
+  }
+
+  // Shows the custom bootscreen and delays
+  void MarlinUI::show_custom_bootscreen() {
+    draw_custom_bootscreen();
+    safe_delay(CUSTOM_BOOTSCREEN_TIMEOUT);
+  }
+
+#endif // SHOW_CUSTOM_BOOTSCREEN
+
 #if HAS_SLOW_BUTTONS
   uint8_t MarlinUI::read_slow_buttons() {
     #if ENABLED(LCD_I2C_TYPE_MCP23017)
       // Reading these buttons is too slow for interrupt context
       // so they are read during LCD update in the main loop.
-      uint8_t slow_bits = lcd.readButtons()
+      uint8_t slow_bits = (lcd.readButtons()
         #if !BUTTON_EXISTS(ENC)
           << B_I2C_BTN_OFFSET
         #endif
-      ;
+      );
       #if ENABLED(LCD_I2C_VIKI)
         if ((slow_bits & (B_MI | B_RI)) && PENDING(millis(), next_button_update_ms)) // LCD clicked
           slow_bits &= ~(B_MI | B_RI); // Disable LCD clicked buttons if screen is updated
@@ -420,6 +467,7 @@ bool MarlinUI::detected() {
 #endif
 
 void MarlinUI::clear_lcd() { lcd.clear(); }
+void MarlinUI::clear_for_drawing() { clear_lcd(); }
 
 #if ENABLED(SHOW_BOOTSCREEN)
 
@@ -466,6 +514,8 @@ void MarlinUI::clear_lcd() { lcd.clear(); }
   }
 
   void MarlinUI::show_bootscreen() {
+    TERN_(SHOW_CUSTOM_BOOTSCREEN, show_custom_bootscreen());
+
     set_custom_characters(CHARSET_BOOT);
     lcd.clear();
 
@@ -660,9 +710,6 @@ FORCE_INLINE void _draw_bed_status(const bool blink) {
       lcd_put_u8str(F("K"));
     #else
       lcd_put_u8str(cutter_power2str(cutter.unitPower));
-      #if CUTTER_UNIT_IS(PERCENT)
-        lcd_put_u8str(F("%"));
-      #endif
     #endif
 
     lcd_put_u8str(F(" "));
@@ -708,7 +755,7 @@ void MarlinUI::draw_status_message(const bool blink) {
 
     // Draw the progress bar if the message has shown long enough
     // or if there is no message set.
-    if (ELAPSED(millis(), progress_bar_ms + PROGRESS_BAR_MSG_TIME) || !has_status()) {
+    if (ELAPSED(millis(), progress_bar_ms, PROGRESS_BAR_MSG_TIME) || !has_status()) {
       const uint8_t progress = get_progress_percent();
       if (progress > 2) return draw_progress_bar(progress);
     }
@@ -786,18 +833,16 @@ void MarlinUI::draw_status_message(const bool blink) {
 #if HAS_PRINT_PROGRESS
 
   #define TPOFFSET (LCD_WIDTH - 1)
-  static uint8_t timepos = TPOFFSET - 6;
-  static char buffer[8];
 
   #if ENABLED(SHOW_PROGRESS_PERCENT)
     static lcd_uint_t pc = 0, pr = 2;
     inline void setPercentPos(const lcd_uint_t c, const lcd_uint_t r) { pc = c; pr = r; }
     void MarlinUI::drawPercent() {
-      const uint8_t progress = ui.get_progress_percent();
+      const uint8_t progress = get_progress_percent();
       if (progress) {
         lcd_moveto(pc, pr);
-        lcd_put_u8str(F(TERN(IS_SD_PRINTING, "SD", "P:")));
-        lcd_put_u8str(TERN(PRINT_PROGRESS_SHOW_DECIMALS, permyriadtostr4(ui.get_progress_permyriad()), ui8tostr3rj(progress)));
+        lcd_put_u8str(card.isStillPrinting() ? F("SD") : F("P:"));
+        lcd_put_u8str(TERN(PRINT_PROGRESS_SHOW_DECIMALS, permyriadtostr4(get_progress_permyriad()), ui8tostr3rj(progress)));
         lcd_put_u8str(F("%"));
       }
     }
@@ -805,11 +850,21 @@ void MarlinUI::draw_status_message(const bool blink) {
 
   #if ENABLED(SHOW_REMAINING_TIME)
     void MarlinUI::drawRemain() {
-      if (printJobOngoing()) {
-        const duration_t remaint = ui.get_remaining_time();
-        timepos = TPOFFSET - remaint.toDigital(buffer);
-        TERN_(NOT(LCD_INFO_SCREEN_STYLE), lcd_put_lchar(timepos - 1, 2, 0x20);)
-        lcd_put_lchar(TERN(LCD_INFO_SCREEN_STYLE, 11, timepos), 2, 'R');
+      if (marlin.printJobOngoing()) {
+        char buffer[8];
+        const duration_t remaint = get_remaining_time();
+        #if LCD_INFO_SCREEN_STYLE == 0
+          const uint8_t timepos = TPOFFSET - remaint.toDigital(buffer);
+          lcd_put_lchar(timepos - 1, 2, ' ');
+        #endif
+        lcd_put_lchar(
+          #if LCD_INFO_SCREEN_STYLE == 0
+            timepos
+          #else
+            11
+          #endif
+          , 2, 'R'
+        );
         lcd_put_u8str(buffer);
       }
     }
@@ -817,11 +872,21 @@ void MarlinUI::draw_status_message(const bool blink) {
 
   #if ENABLED(SHOW_INTERACTION_TIME)
     void MarlinUI::drawInter() {
-      const duration_t interactt = ui.interaction_time;
-      if (printingIsActive() && interactt.value) {
-        timepos = TPOFFSET - interactt.toDigital(buffer);
-        TERN_(NOT(LCD_INFO_SCREEN_STYLE), lcd_put_lchar(timepos - 1, 2, 0x20);)
-        lcd_put_lchar(TERN(LCD_INFO_SCREEN_STYLE, 11, timepos), 2, 'C');
+      const duration_t interactt = interaction_time;
+      if (marlin.printingIsActive() && interactt.value) {
+        char buffer[8];
+        #if LCD_INFO_SCREEN_STYLE == 0
+          const uint8_t timepos = TPOFFSET - interactt.toDigital(buffer);
+          lcd_put_lchar(timepos - 1, 2, ' ');
+        #endif
+        lcd_put_lchar(
+          #if LCD_INFO_SCREEN_STYLE == 0
+            timepos
+          #else
+            11
+          #endif
+          , 2, 'C'
+        );
         lcd_put_u8str(buffer);
       }
     }
@@ -829,11 +894,21 @@ void MarlinUI::draw_status_message(const bool blink) {
 
   #if ENABLED(SHOW_ELAPSED_TIME)
     void MarlinUI::drawElapsed() {
-      if (printJobOngoing()) {
+      if (marlin.printJobOngoing()) {
+        char buffer[8];
         const duration_t elapsedt = print_job_timer.duration();
-        timepos = TPOFFSET - elapsedt.toDigital(buffer);
-        TERN_(NOT(LCD_INFO_SCREEN_STYLE), lcd_put_lchar(timepos - 1, 2, 0x20);)
-        lcd_put_lchar(TERN(LCD_INFO_SCREEN_STYLE, 11, timepos), 2, 'E');
+        #if LCD_INFO_SCREEN_STYLE == 0
+          const uint8_t timepos = TPOFFSET - elapsedt.toDigital(buffer);
+          lcd_put_lchar(timepos - 1, 2, ' ');
+        #endif
+        lcd_put_lchar(
+          #if LCD_INFO_SCREEN_STYLE == 0
+            timepos
+          #else
+            11
+          #endif
+          , 2, 'E'
+        );
         lcd_put_u8str(buffer);
       }
     }
@@ -953,7 +1028,7 @@ void MarlinUI::draw_status_screen() {
       #if LCD_WIDTH < 20
 
         #if HAS_PRINT_PROGRESS
-          TERN_(SHOW_PROGRESS_PERCENT, setPercentPos(0, 2));
+          TERN_(SHOW_PROGRESS_PERCENT, setPercentPos(0, 1));
           rotate_progress();
         #endif
 
@@ -997,7 +1072,7 @@ void MarlinUI::draw_status_screen() {
 
           #else // !HAS_DUAL_MIXING
 
-            const bool show_e_total = TERN1(HAS_X_AXIS, TERN0(LCD_SHOW_E_TOTAL, printingIsActive()));
+            const bool show_e_total = TERN1(HAS_X_AXIS, TERN0(LCD_SHOW_E_TOTAL, marlin.printingIsActive()));
 
             if (show_e_total) {
               #if ENABLED(LCD_SHOW_E_TOTAL)
@@ -1049,7 +1124,7 @@ void MarlinUI::draw_status_screen() {
           rotate_progress();
         #else
           char c;
-          uint16_t per;
+          uint16_t pct;
           #if HAS_FAN0
             if (true
               #if ALL(HAS_EXTRUDERS, ADAPTIVE_FAN_SLOWING)
@@ -1061,18 +1136,18 @@ void MarlinUI::draw_status_screen() {
               #if ENABLED(ADAPTIVE_FAN_SLOWING)
                 else { c = '*'; spd = thermalManager.scaledFanSpeed(0, spd); }
               #endif
-              per = thermalManager.pwmToPercent(spd);
+              pct = thermalManager.pwmToPercent(spd);
             }
             else
           #endif
             {
               #if HAS_EXTRUDERS
                 c = 'E';
-                per = planner.flow_percentage[0];
+                pct = planner.flow_percentage[0];
               #endif
             }
           lcd_put_lchar(c);
-          lcd_put_u8str(i16tostr3rj(per));
+          lcd_put_u8str(i16tostr3rj(pct));
           lcd_put_u8str(F("%"));
         #endif
       #endif
@@ -1139,7 +1214,39 @@ void MarlinUI::draw_status_screen() {
       TERN_(SHOW_PROGRESS_PERCENT, setPercentPos(LCD_WIDTH - 9, 2));
       rotate_progress();
     #endif
-  #endif // LCD_INFO_SCREEN_STYLE 1
+
+  #elif LCD_INFO_SCREEN_STYLE == 2
+
+    // ========== Line 1 ==========
+
+    //
+    // X Coordinate
+    //
+    lcd_moveto(0, 0);
+    _draw_axis_value(X_AXIS, ftostr52sp(LOGICAL_X_POSITION(current_position.x)), blink);
+
+    //
+    // Y Coordinate
+    //
+    lcd_moveto(LCD_WIDTH - 9, 0);
+    _draw_axis_value(Y_AXIS, ftostr52sp(LOGICAL_Y_POSITION(current_position.y)), blink);
+
+    // ========== Line 2 ==========
+    lcd_moveto(0, 1);
+    _draw_axis_value(Z_AXIS, ftostr52sp(LOGICAL_Z_POSITION(current_position.z)), blink);
+
+    lcd_moveto(LCD_WIDTH - 9, 1);
+    _draw_axis_value(I_AXIS, ftostr52sp(LOGICAL_I_POSITION(current_position.i)), blink);
+
+    // ========== Line 3 ==========
+    lcd_moveto(0, 2);
+    lcd_put_lchar('F');
+
+    lcd_moveto(LCD_WIDTH - 9, 2);
+    lcd_put_lchar('S');
+
+
+  #endif // LCD_INFO_SCREEN_STYLE
 
   // ========= Last Line ========
 
@@ -1165,32 +1272,43 @@ void MarlinUI::draw_status_screen() {
   #endif // ADVANCED_PAUSE_FEATURE
 
   // Draw a static item with no left-right margin required. Centered by default.
-  void MenuItem_static::draw(const uint8_t row, FSTR_P const fstr, const uint8_t style/*=SS_DEFAULT*/, const char *vstr/*=nullptr*/) {
+  void MenuItem_static::draw(const uint8_t row, FSTR_P const ftpl, const uint8_t style/*=SS_DEFAULT*/, const char *vstr/*=nullptr*/) {
     lcd_moveto(0, row);
 
     int8_t n = LCD_WIDTH;
     const bool center = bool(style & SS_CENTER), full = bool(style & SS_FULL);
-    const int8_t plen = fstr ? utf8_strlen(fstr) : 0,
-                 vlen = vstr ? utf8_strlen(vstr) : 0;
-    int8_t pad = (center || full) ? n - plen - vlen : 0;
+
+    // Value length, if any
+    int8_t vlen = vstr ? utf8_strlen(vstr) : 0;
+
+    // Expanded label string and width in chars
+    char estr[calculateWidth(ftpl) + 3] = "\0";
+    int8_t llen = ftpl ? expand_u8str(estr, ftpl, itemIndex, itemStringC, itemStringF, n - vlen) : 0;
+
+    bool mv_colon = false;
+    if (vlen && !center) {
+      // Move the leading colon from the value to the label below
+      mv_colon = (*vstr == ':');
+      // Shorter value, wider label
+      if (mv_colon) { vstr++; vlen--; llen++; }
+      // Remove leading spaces from the value and shorten
+      while (*vstr == ' ') { vstr++; vlen--; }
+    }
+
+    // Padding for center or full justification
+    int8_t pad = (center || full) ? n - llen - vlen : 0;
 
     // SS_CENTER: Pad with half of the unused space first
-    if (center) for (int8_t lpad = pad / 2; lpad > 0; --lpad) { lcd_put_u8str(F(" ")); n--; }
+    if (center) for (int8_t lpad = pad / 2; lpad > 0; --lpad, --pad, --n) lcd_put_u8str(F(" "));
 
-    // Draw as much of the label as fits
-    if (plen) {
-      const int8_t expl = n;
-      n = lcd_put_u8str(fstr, itemIndex, itemStringC, itemStringF, n);
-      pad -= (expl - n - plen); // Reduce the padding
-    }
+    // Draw as much of the label as fits (without the relocated colon, drawn below)
+    if (llen) n -= lcd_put_u8str_max(estr, n - vlen);
 
     if (vlen && n > 0) {
       // SS_FULL: Pad with enough space to justify the value
       if (full && !center) {
         // Move the leading colon from the value to the label
-        if (*vstr == ':') { n -= lcd_put_u8str(F(":")); vstr++; }
-        // Move spaces to the padding
-        while (*vstr == ' ') { vstr++; pad++; }
+        if (mv_colon) n -= lcd_put_u8str(F(":"));
         // Pad in-between
         for (; pad > 0; --pad) { lcd_put_u8str(F(" ")); n--; }
       }
@@ -1203,7 +1321,8 @@ void MarlinUI::draw_status_screen() {
   // Draw a generic menu item with pre_char (if selected) and post_char
   void MenuItemBase::_draw(const bool sel, const uint8_t row, FSTR_P const ftpl, const char pre_char, const char post_char) {
     lcd_put_lchar(0, row, sel ? pre_char : ' ');
-    uint8_t n = lcd_put_u8str(ftpl, itemIndex, itemStringC, itemStringF, LCD_WIDTH - 2);
+    uint8_t n = LCD_WIDTH - 2;
+    n -= lcd_put_u8str(ftpl, itemIndex, itemStringC, itemStringF, n);
     for (; n; --n) lcd_put_u8str(F(" "));
     lcd_put_lchar(post_char);
   }
@@ -1224,7 +1343,8 @@ void MarlinUI::draw_status_screen() {
   // Low-level draw_edit_screen can be used to draw an edit screen from anyplace
   void MenuEditItemBase::draw_edit_screen(FSTR_P const ftpl, const char * const value/*=nullptr*/) {
     ui.encoder_direction_normal();
-    uint8_t n = lcd_put_u8str(0, 1, ftpl, itemIndex, itemStringC, itemStringF, LCD_WIDTH - 1);
+    uint8_t n = LCD_WIDTH - 1;
+    n -= lcd_put_u8str(0, 1, ftpl, itemIndex, itemStringC, itemStringF, n);
     if (value) {
       lcd_put_u8str(F(":")); n--;
       const uint8_t len = utf8_strlen(value) + 1;   // Plus one for a leading space
@@ -1235,8 +1355,8 @@ void MarlinUI::draw_status_screen() {
   }
 
   // The Select Screen presents a prompt and two "buttons"
-  void MenuItem_confirm::draw_select_screen(FSTR_P const yes, FSTR_P const no, const bool yesno, FSTR_P const pref, const char * const string/*=nullptr*/, FSTR_P const suff/*=nullptr*/) {
-    ui.draw_select_screen_prompt(pref, string, suff);
+  void MenuItem_confirm::draw_select_screen(FSTR_P const yes, FSTR_P const no, const bool yesno, FSTR_P const fpre, const char * const string/*=nullptr*/, FSTR_P const fsuf/*=nullptr*/) {
+    ui.draw_select_screen_prompt(fpre, string, fsuf);
     if (no) {
       SETCURSOR(0, LCD_HEIGHT - 1);
       lcd_put_lchar(yesno ? ' ' : '['); lcd_put_u8str(no); lcd_put_lchar(yesno ? ' ' : ']');
@@ -1251,8 +1371,8 @@ void MarlinUI::draw_status_screen() {
 
     void MenuItem_sdbase::draw(const bool sel, const uint8_t row, FSTR_P const, CardReader &theCard, const bool isDir) {
       lcd_put_lchar(0, row, sel ? LCD_STR_ARROW_RIGHT[0] : ' ');
-      constexpr uint8_t maxlen = LCD_WIDTH - 2;
-      uint8_t n = maxlen - lcd_put_u8str_max(ui.scrolled_filename(theCard, maxlen, row, sel), maxlen);
+      uint8_t n = LCD_WIDTH - 2;
+      n -= lcd_put_u8str_max(ui.scrolled_filename(theCard, n, sel), n);
       for (; n; --n) lcd_put_u8str(F(" "));
       lcd_put_lchar(isDir ? LCD_STR_FOLDER[0] : ' ');
     }
@@ -1424,7 +1544,7 @@ void MarlinUI::draw_status_screen() {
         lower_right.column = 0;
         lower_right.row    = 0;
 
-        clear_lcd();
+        clear_for_drawing();
 
         x_map_pixels = (HD44780_CHAR_WIDTH) * (MESH_MAP_COLS) - 2;          // Minus 2 because we are drawing a box around the map
         y_map_pixels = (HD44780_CHAR_HEIGHT) * (MESH_MAP_ROWS) - 2;

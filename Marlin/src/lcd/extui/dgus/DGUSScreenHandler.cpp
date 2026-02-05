@@ -62,7 +62,7 @@ void (*DGUSScreenHandler::confirm_action_cb)() = nullptr;
   filament_data_t filament_data;
 #endif
 
-void DGUSScreenHandler::sendInfoScreen(PGM_P const line1, PGM_P const line2, PGM_P const line3, PGM_P const line4, bool l1inflash, bool l2inflash, bool l3inflash, bool l4inflash) {
+void DGUSScreenHandler::sendInfoScreen_P(PGM_P const line1, PGM_P const line2, PGM_P const line3, PGM_P const line4, bool l1inflash, bool l2inflash, bool l3inflash, bool l4inflash) {
   DGUS_VP_Variable ramcopy;
   if (populate_VPVar(VP_MSGSTR1, &ramcopy)) {
     ramcopy.memadr = (void*) line1;
@@ -89,7 +89,7 @@ void DGUSScreenHandler::handleUserConfirmationPopUp(uint16_t VP, PGM_P const lin
     popToOldScreen();
 
   confirmVP = VP;
-  sendInfoScreen(line1, line2, line3, line4, l1, l2, l3, l4);
+  sendInfoScreen_P(line1, line2, line3, line4, l1, l2, l3, l4);
   gotoScreen(DGUS_SCREEN_CONFIRM);
 }
 
@@ -101,7 +101,7 @@ void DGUSScreenHandler::setStatusMessage(const char *msg) {
   }
 }
 
-void DGUSScreenHandler::setstatusmessagePGM(PGM_P const msg) {
+void DGUSScreenHandler::setStatusMessage_P(PGM_P const msg) {
   DGUS_VP_Variable ramcopy;
   if (populate_VPVar(VP_M117, &ramcopy)) {
     ramcopy.memadr = (void*) msg;
@@ -164,10 +164,11 @@ void DGUSScreenHandler::sendStringToDisplay(DGUS_VP_Variable &var) {
 // overwrite the remainings with spaces.// var.size has the display buffer size!
 void DGUSScreenHandler::sendStringToDisplayPGM(DGUS_VP_Variable &var) {
   char *tmp = (char*) var.memadr;
-  dgus.writeVariablePGM(var.VP, tmp, var.size, true);
+  dgus.writeVariable_P(var.VP, tmp, var.size, true);
 }
 
 #if HAS_PID_HEATING
+
   void DGUSScreenHandler::sendTemperaturePID(DGUS_VP_Variable &var) {
     float value = *(float *)var.memadr;
     value /= 10;
@@ -200,7 +201,8 @@ void DGUSScreenHandler::sendStringToDisplayPGM(DGUS_VP_Variable &var) {
     tmp[1] = endian.lb[0];
     dgus.writeVariable(var.VP, tmp, 2);
   }
-#endif
+
+#endif // HAS_PID_HEATING
 
 #if ENABLED(PRINTCOUNTER)
 
@@ -221,7 +223,7 @@ void DGUSScreenHandler::sendStringToDisplayPGM(DGUS_VP_Variable &var) {
     dgus.writeVariable(VP_PrintsTotal, buf, var.size, true);
   }
 
-#endif
+#endif // PRINTCOUNTER
 
 // Send fan status value to the display.
 #if HAS_FAN
@@ -249,8 +251,7 @@ void DGUSScreenHandler::sendHeaterStatusToDisplay(DGUS_VP_Variable &var) {
 
   void DGUSScreenHandler::sendWaitingStatusToDisplay(DGUS_VP_Variable &var) {
     // In FYSETC UI design there are 10 statuses to loop
-    static uint16_t period = 0;
-    static uint16_t index = 0;
+    static uint16_t period = 0,  index = 0;
     if (period++ > DGUS_UI_WAITING_STATUS_PERIOD) {
       dgus.writeVariable(var.VP, index);
       if (++index >= DGUS_UI_WAITING_STATUS) index = 0;
@@ -264,22 +265,22 @@ void DGUSScreenHandler::sendHeaterStatusToDisplay(DGUS_VP_Variable &var) {
 
   void DGUSScreenHandler::screenChangeHookIfSD(DGUS_VP_Variable &var, void *val_ptr) {
     // default action executed when there is a SD card, but not printing
-    if (ExtUI::isMediaInserted() && !ExtUI::isPrintingFromMedia()) {
+    if (ExtUI::isMediaMounted() && !ExtUI::isPrintingFromMedia()) {
       screenChangeHook(var, val_ptr);
       dgus.requestScreen(current_screenID);
       return;
     }
 
-    // if we are printing, we jump to two screens after the requested one.
-    // This should host e.g a print pause / print abort / print resume dialog.
-    // This concept allows to recycle this hook for other file
+    // If we are printing we jump to two screens after the requested one.
+    // This should host, e.g., a print pause / print abort / print resume dialog.
+    // This concept allows to recycle this hook for other files.
     if (ExtUI::isPrintingFromMedia() && !card.flag.abort_sd_printing) {
       gotoScreen(DGUS_SCREEN_SDPRINTMANIPULATION);
       return;
     }
 
     // Don't let the user in the dark why there is no reaction.
-    if (!ExtUI::isMediaInserted()) {
+    if (!ExtUI::isMediaMounted()) {
       setStatusMessage(GET_TEXT_F(MSG_NO_MEDIA));
       return;
     }
@@ -324,7 +325,11 @@ void DGUSScreenHandler::sendHeaterStatusToDisplay(DGUS_VP_Variable &var) {
 
   void DGUSScreenHandler::sdCardError() {
     DGUSScreenHandler::sdCardRemoved();
-    sendInfoScreen(F("NOTICE"), nullptr, F("SD card error"), nullptr, true, true, true, true);
+    #if DGUS_LCD_UI_MKS
+      screen.sendInfoScreenMKS(F("NOTICE"), nullptr, F("SD card error"), nullptr, mks_language_index);
+    #else
+      sendInfoScreen(F("NOTICE"), nullptr, F("SD card error"), nullptr);
+    #endif
     setupConfirmAction(nullptr);
     gotoScreen(DGUS_SCREEN_POPUP);
   }
@@ -379,21 +384,21 @@ void DGUSScreenHandler::handleTemperatureChanged(DGUS_VP_Variable &var, void *va
     default: return;
     #if HAS_HOTEND
       case VP_T_E0_Set:
-        NOMORE(newvalue, HEATER_0_MAXTEMP);
+        NOMORE(newvalue, thermalManager.hotend_max_target(0));
         thermalManager.setTargetHotend(newvalue, 0);
         acceptedvalue = thermalManager.degTargetHotend(0);
         break;
     #endif
     #if HAS_MULTI_HOTEND
       case VP_T_E1_Set:
-        NOMORE(newvalue, HEATER_1_MAXTEMP);
+        NOMORE(newvalue, thermalManager.hotend_max_target(1));
         thermalManager.setTargetHotend(newvalue, 1);
         acceptedvalue = thermalManager.degTargetHotend(1);
         break;
     #endif
     #if HAS_HEATED_BED
       case VP_T_Bed_Set:
-        NOMORE(newvalue, BED_MAXTEMP);
+        NOMORE(newvalue, BED_MAX_TARGET);
         thermalManager.setTargetBed(newvalue);
         acceptedvalue = thermalManager.degTargetBed();
         break;
@@ -432,9 +437,9 @@ void DGUSScreenHandler::handleManualExtrude(DGUS_VP_Variable &var, void *val_ptr
   switch (var.VP) {
     #if HAS_HOTEND
       case VP_MOVE_E0: target_extruder = ExtUI::extruder_t::E0; break;
-      #if HAS_MULTI_EXTRUDER
-        case VP_MOVE_E1: target_extruder = ExtUI::extruder_t::E1; break;
-      #endif
+    #endif
+    #if HAS_MULTI_EXTRUDER
+      case VP_MOVE_E1: target_extruder = ExtUI::extruder_t::E1; break;
     #endif
     default: return;
   }
@@ -469,54 +474,54 @@ void DGUSScreenHandler::handleSettings(DGUS_VP_Variable &var, void *val_ptr) {
   }
 }
 
-void DGUSScreenHandler::handleStepPerMMChanged(DGUS_VP_Variable &var, void *val_ptr) {
-  const uint16_t value_raw = BE16_P(val_ptr);
-  const float value = (float)value_raw / 10;
-  ExtUI::axis_t axis;
-  switch (var.VP) {
-    case VP_X_STEP_PER_MM: axis = ExtUI::axis_t::X; break;
-    case VP_Y_STEP_PER_MM: axis = ExtUI::axis_t::Y; break;
-    case VP_Z_STEP_PER_MM: axis = ExtUI::axis_t::Z; break;
-    default: return;
-  }
-  ExtUI::setAxisSteps_per_mm(value, axis);
-  skipVP = var.VP; // don't overwrite value the next update time as the display might autoincrement in parallel
-}
+#if ENABLED(EDITABLE_STEPS_PER_UNIT)
 
-void DGUSScreenHandler::handleStepPerMMExtruderChanged(DGUS_VP_Variable &var, void *val_ptr) {
-  const uint16_t value_raw = BE16_P(val_ptr);
-  const float value = (float)value_raw / 10;
-  ExtUI::extruder_t extruder;
-  switch (var.VP) {
-    default: return;
+  void DGUSScreenHandler::handleStepPerMMChanged(DGUS_VP_Variable &var, void *val_ptr) {
+    const uint16_t value_raw = BE16_P(val_ptr);
+    const float value = (float)value_raw / 10;
+    ExtUI::axis_t axis;
+    switch (var.VP) {
+      case VP_X_STEP_PER_MM: axis = ExtUI::axis_t::X; break;
+      case VP_Y_STEP_PER_MM: axis = ExtUI::axis_t::Y; break;
+      case VP_Z_STEP_PER_MM: axis = ExtUI::axis_t::Z; break;
+      default: return;
+    }
+    ExtUI::setAxisSteps_per_mm(value, axis);
+    skipVP = var.VP; // don't overwrite value the next update time as the display might autoincrement in parallel
+  }
+
+  void DGUSScreenHandler::handleStepPerMMExtruderChanged(DGUS_VP_Variable &var, void *val_ptr) {
+    const uint16_t value_raw = BE16_P(val_ptr);
+    const float value = (float)value_raw / 10;
+    ExtUI::extruder_t extruder;
+    switch (var.VP) {
+      default: return;
       #if HAS_EXTRUDERS
         case VP_E0_STEP_PER_MM: extruder = ExtUI::extruder_t::E0; break;
-        #if HAS_MULTI_EXTRUDER
-          case VP_E1_STEP_PER_MM: extruder = ExtUI::extruder_t::E1; break;
-        #endif
       #endif
+      #if HAS_MULTI_EXTRUDER
+        case VP_E1_STEP_PER_MM: extruder = ExtUI::extruder_t::E1; break;
+      #endif
+    }
+    ExtUI::setAxisSteps_per_mm(value, extruder);
+    skipVP = var.VP; // don't overwrite value the next update time as the display might autoincrement in parallel
   }
-  ExtUI::setAxisSteps_per_mm(value, extruder);
-  skipVP = var.VP; // don't overwrite value the next update time as the display might autoincrement in parallel
-}
+
+#endif // EDITABLE_STEPS_PER_UNIT
 
 #if HAS_PID_HEATING
   void DGUSScreenHandler::handlePIDAutotune(DGUS_VP_Variable &var, void *val_ptr) {
-    char buf[32] = {0};
-
     switch (var.VP) {
       default: break;
         #if ENABLED(PIDTEMP)
           #if HAS_HOTEND
             case VP_PID_AUTOTUNE_E0: // Autotune Extruder 0
-              sprintf_P(buf, PSTR("M303 E%d C5 S210 U1"), ExtUI::extruder_t::E0);
-              queue.enqueue_one_now(buf);
+              queue.enqueue_one_now(F("M303 E0 C5 S210 U1"));
               break;
           #endif
           #if HAS_MULTI_HOTEND
             case VP_PID_AUTOTUNE_E1:
-              sprintf_P(buf, PSTR("M303 E%d C5 S210 U1"), ExtUI::extruder_t::E1);
-              queue.enqueue_one_now(buf);
+              queue.enqueue_one_now(F("M303 E1 C5 S210 U1"));
               break;
           #endif
         #endif
@@ -532,11 +537,12 @@ void DGUSScreenHandler::handleStepPerMMExtruderChanged(DGUS_VP_Variable &var, vo
       gotoScreen(DGUS_SCREEN_WAITING);
     #endif
   }
+
 #endif // HAS_PID_HEATING
 
 #if HAS_BED_PROBE
   void DGUSScreenHandler::handleProbeOffsetZChanged(DGUS_VP_Variable &var, void *val_ptr) {
-    const float offset = float(int16_t(BE16_P(val_ptr))) / 100.0f;
+    const float offset = float(int16_t(BE16_P(val_ptr))) * 0.01f;
     ExtUI::setZOffset_mm(offset);
     skipVP = var.VP; // don't overwrite value the next update time as the display might autoincrement in parallel
     return;
@@ -603,7 +609,7 @@ void DGUSScreenHandler::handleHeaterControl(DGUS_VP_Variable &var, void *val_ptr
     uint16_t value = BE16_P(val_ptr);
     if (value) {
       queue.inject(F("M1000"));
-      dgus.writeVariable(VP_SD_Print_Filename, filelist.filename(), 32, true);
+      dgus.writeStringVar(VP_SD_Print_Filename, filelist.filename());
       gotoScreen(PLR_SCREEN_RECOVER);
     }
     else {

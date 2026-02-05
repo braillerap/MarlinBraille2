@@ -28,10 +28,6 @@
 
 Mixer mixer;
 
-#ifdef MIXER_NORMALIZER_DEBUG
-  #include "../core/serial.h"
-#endif
-
 // Used up to Planner level
 uint_fast8_t  Mixer::selected_vtool = 0;
 float         Mixer::collector[MIXING_STEPPERS]; // mix proportion. 0.0 = off, otherwise <= COLOR_A_MASK.
@@ -60,7 +56,7 @@ void Mixer::normalize(const uint8_t tool_index) {
   }
   #ifdef MIXER_NORMALIZER_DEBUG
     SERIAL_ECHOPGM("Mixer: Old relation : [ ");
-    MIXER_STEPPER_LOOP(i) SERIAL_ECHO(collector[i] / csum, AS_CHAR(' '));
+    MIXER_STEPPER_LOOP(i) SERIAL_ECHO(collector[i] / csum, C(' '));
     SERIAL_ECHOLNPGM("]");
   #endif
 
@@ -72,12 +68,12 @@ void Mixer::normalize(const uint8_t tool_index) {
     csum = 0;
     SERIAL_ECHOPGM("Mixer: Normalize to : [ ");
     MIXER_STEPPER_LOOP(i) {
-      SERIAL_ECHO(uint16_t(color[tool_index][i]), AS_CHAR(' '));
+      SERIAL_ECHO(uint16_t(color[tool_index][i]), C(' '));
       csum += color[tool_index][i];
     }
     SERIAL_ECHOLNPGM("]");
     SERIAL_ECHOPGM("Mixer: New relation : [ ");
-    MIXER_STEPPER_LOOP(i) SERIAL_ECHO(p_float_t(uint16_t(color[tool_index][i]) / csum, 3), AS_CHAR(' '));
+    MIXER_STEPPER_LOOP(i) SERIAL_ECHO(p_float_t(uint16_t(color[tool_index][i]) / csum, 3), C(' '));
     SERIAL_ECHOLNPGM("]");
   #endif
 
@@ -170,7 +166,7 @@ void Mixer::refresh_collector(const float proportion/*=1.0*/, const uint8_t t/*=
 
   float Mixer::prev_z; // = 0
 
-  void Mixer::update_gradient_for_z(const_float_t z) {
+  void Mixer::update_gradient_for_z(const float z) {
     if (z == prev_z) return;
     prev_z = z;
 
